@@ -1,43 +1,32 @@
 #pragma once
 #include <vector>
 
-class DirihleVPuassone // вариант 8 
-{
-
+class DirihleVPuassone {
 	const double pi = 3.141592653589793;
 
 public:
+	double a = 0.0, b = 3.0;
+	double c = 0.0, d = 1.0;
 
-	std::vector<std::vector<double>> v; // вектор v участвующий в подсчете текущей точки v ij
-	std::vector<std::vector<double>> r; // невязка
-	std::vector<std::vector<double>> Ar; // скалярное произведение невязки r на матрицу A
-	std::vector<std::vector<double>> f_right; // правая часть для текущей строки?
-
-	double calculate_v_i_j(std::vector<std::vector<double>>& vhod, int i, int j); // заменяем 4 точечным шаблоном
-
-	double scalar_mul(std::vector<std::vector<double>> vector1, std::vector<std::vector<double>> vector2);
+	int n = 0, m = 0;
+	double h = 0.0, k = 0.0;
+	double inv_h2 = 0.0, inv_k2 = 0.0;
 
 
-
-
-
-
-
-	double a, b; // границы x [0,3]
-	double c, d; // границы y [0,1]
-
-	int n, m = 0; // количество разбиений по осям x, y соответственно
-	// узлов будет n+1, m+1
-	double h, k = 0.0; // шаги по сеткам x и y соответственно
-
-	double E_met = 0.0;
-	int N_max = 0;
+	std::vector<double> v;
+	std::vector<double> r;
+	std::vector<double> Ar;
+	std::vector<double> f_grid;
 	
+	void preparation(double a_temp, double b_temp, double c_temp, double d_temp, int n_temp, int m_temp);
 
+	void calculate_f_grid_test();
 
+	void prepare_v_and_i_test();
 
+	double calculate_v_i_j(std::vector<double>& vhod, int i, int j); // заменяем 4 точечным шаблоном
 
-
+	double scalar_mul(std::vector<double>& vector1, std::vector<double>& vector2);
 
 
 

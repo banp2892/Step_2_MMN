@@ -2,16 +2,86 @@
 #include <math.h>
 #include <iostream>
 
-double DirihleVPuassone::calculate_v_i_j(std::vector<std::vector<double>>& vhod, int i, int j)
+void DirihleVPuassone::preparation(double a_temp, double b_temp, double c_temp, double d_temp, int n_temp, int m_temp)
 {
-	if ((i - 1 < 0) || (i + 1 > n ) || (j - 1) < 0 || (j + 1) > m ) {
-		std::cout << "Failed the bordes to calculate v, index: " << i << ", " << j << std::endl;
-		return 0.0;
+
+	a = a_temp;
+	b = b_temp;
+	c = c_temp;
+	d = d_temp;
+	n = n_temp;
+	m = m_temp;
+	h = (b_temp - a_temp) / n;
+	k = (d_temp - c_temp) / m;
+
+	inv_h2 = 1.0 / (h * h);
+	inv_k2 = 1.0 / (k * k);
+
+
+}
+
+void DirihleVPuassone::calculate_f_grid_test()
+{
+	for (int j = 0; j < m+1; j++) {
+		double y = c + j * k;
+		for (int i = 0; i < n+1; i++) {
+			double x = a + i * h;
+			f_grid[j * (n+1) + i] = f_test(x, y);
+		}
 	}
 
-	double v_i_j = 
+}
 
-	return 0.0;
+void DirihleVPuassone::prepare_v_and_i_test()
+{
+	calculate_f_grid_test();
+
+	for (int j = 0; j <= m; j++) {
+		double y = c + j * k;
+		for (int i = 0; i <= n; i++) {
+			double x = a + i * h;
+			int idx = j * (n + 1) + i;
+
+			if (i == 0)      v[idx] = Nu1_test(y);
+			else if (i == n) v[idx] = Nu2_test(y);
+			else if (j == 0) v[idx] = Nu3_test(x);
+			else if (j == m) v[idx] = Nu4_test(x);
+			else {
+				v[idx] = 0.0;
+			}
+		}
+	}
+}
+
+double DirihleVPuassone::calculate_v_i_j(std::vector<double>& vhod, int i, int j)
+{
+
+	int center_idx = j * (n + 1) + i;
+
+	double v_left = vhod[j * (n + 1) + (i - 1)];
+	double v_right = vhod[j * (n + 1) + (i + 1)];
+	double v_down = vhod[(j - 1) * (n + 1) + i];
+	double v_up = vhod[(j + 1) * (n + 1) + i];
+	double v_curr = vhod[center_idx];
+
+	double res = (2.0 * inv_h2 + 2.0 * inv_k2) * v_curr - inv_h2 * (v_left + v_right) - inv_k2 * (v_up + v_down);
+
+	return res;
+}
+
+double DirihleVPuassone::scalar_mul(std::vector<double>& vector1, std::vector<double>& vector2)
+{
+	
+	double sum = 0.0;
+	for (int j = 1; j < m; j++) {
+		for (int i = 1; i < n; i++) {
+			int id = j * (n + 1) + i;
+			sum += vector2[id] * vector1[id];
+		}
+	}
+
+	
+	return sum;
 }
 
 double DirihleVPuassone::Nu1_main(double y)

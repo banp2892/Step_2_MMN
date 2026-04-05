@@ -18,17 +18,11 @@
     <ClCompile Include="Source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MMN.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DirihleVPuassone.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MMN.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DirihleVPuassone.h">
       <Filter>Header Files</Filter>
     </ClInclude>

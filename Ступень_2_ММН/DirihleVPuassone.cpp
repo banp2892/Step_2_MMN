@@ -143,34 +143,37 @@ double DirihleVPuassone::calculate_v_i_j(std::vector<double>& vhod, int i, int j
 
 double DirihleVPuassone::scalar_mul(std::vector<double>& v1, std::vector<double>& v2) {
 	double sum = 0.0;
-#pragma omp parallel for reduction(+:sum) collapse(2)
+#pragma omp parallel for reduction(+:sum)
 	for (int j = 1; j < m; j++) {
+		int row_offset = j * (n + 1);
 		for (int i = 1; i < n; i++) {
-			sum += v1[j * (n + 1) + i] * v2[j * (n + 1) + i];
+			sum += v1[row_offset + i] * v2[row_offset + i];
 		}
 	}
 	return sum;
 }
 
 double DirihleVPuassone::solve() {
-
 	calculate_r();
-
 	calculate_Ar();
 
 	double ar_r = scalar_mul(Ar, r);
 	double ar_ar = scalar_mul(Ar, Ar);
 
-	if (std::abs(ar_ar) < 1e-16) return 0.0; // проверка деления на ноль
+	if (std::abs(ar_ar) < 1e-18) return 0.0;
 
 	double tao = ar_r / ar_ar;
-
 	double max_r = 0.0;
+
+#pragma omp parallel for reduction(max:max_r)
 	for (int j = 1; j < m; j++) {
+		int row = j * (n + 1);
 		for (int i = 1; i < n; i++) {
-			int idx = j * (n + 1) + i;
-			v[idx] = v[idx] - tao * r[idx];
-			if (std::abs(r[idx]) > max_r) max_r = std::abs(r[idx]);
+			int idx = row + i;
+			v[idx] -= tao * r[idx];
+
+			double abs_r = std::abs(r[idx]);
+			if (abs_r > max_r) max_r = abs_r;
 		}
 	}
 	return max_r;
@@ -178,27 +181,50 @@ double DirihleVPuassone::solve() {
 
 
 void DirihleVPuassone::calculate_Ar() {
+	const int B = 32;
+
 #pragma omp parallel for collapse(2)
-	for (int j = 1; j < m; j++) {
-		for (int i = 1; i < n; i++) {
-			int idx = j * (n + 1) + i;
-			Ar[idx] = calculate_v_i_j(r, i, j);
+	for (int jj = 1; jj < m; jj += B) {
+		for (int ii = 1; ii < n; ii += B) {
+
+			for (int j = jj; j < std::min(jj + B, m); ++j) {
+				int row = j * (n + 1);
+				int prev_row = (j - 1) * (n + 1);
+				int next_row = (j + 1) * (n + 1);
+
+				for (int i = ii; i < std::min(ii + B, n); ++i) {
+					Ar[row + i] = (2.0 * inv_h2 + 2.0 * inv_k2) * r[row + i]
+						- inv_h2 * (r[row + i - 1] + r[row + i + 1])
+						- inv_k2 * (r[prev_row + i] + r[next_row + i]);
+				}
+			}
 		}
 	}
-
-
 }
-
 void DirihleVPuassone::calculate_r() {
+	const int B = 32; // Размер блока
+
 #pragma omp parallel for collapse(2)
-	for (int j = 1; j < m; j++) {
-		for (int i = 1; i < n; i++) {
-			int idx = j * (n + 1) + i;
-			r[idx] = calculate_v_i_j(v, i, j) - f_grid[idx];
+	for (int jj = 1; jj < m; jj += B) {
+		for (int ii = 1; ii < n; ii += B) {
+
+			// Обработка конкретного блока
+			for (int j = jj; j < std::min(jj + B, m); ++j) {
+				int row = j * (n + 1);
+				int prev_row = (j - 1) * (n + 1);
+				int next_row = (j + 1) * (n + 1);
+
+				for (int i = ii; i < std::min(ii + B, n); ++i) {
+					// Оператор Лапласа (пятиточечный шаблон)
+					double Lapl = (2.0 * inv_h2 + 2.0 * inv_k2) * v[row + i]
+						- inv_h2 * (v[row + i - 1] + v[row + i + 1])
+						- inv_k2 * (v[prev_row + i] + v[next_row + i]);
+
+					r[row + i] = Lapl - f_grid[row + i];
+				}
+			}
 		}
 	}
-
-
 }
 
 

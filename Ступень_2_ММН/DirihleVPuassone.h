@@ -14,6 +14,7 @@ public:
 	int n = 0, m = 0;
 	double h = 0.0, k = 0.0;
 	double inv_h2 = 0.0, inv_k2 = 0.0;
+	double tau = 0.0;
 
 
 	std::vector<double> v;
@@ -59,6 +60,7 @@ public:
 	double solve();
 	void calculate_Ar();
 	void calculate_r();
+	void print_final_accuracy();
 };
 
 

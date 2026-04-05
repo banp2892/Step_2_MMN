@@ -179,7 +179,7 @@ double DirihleVPuassone::solve() {
 
 
 void DirihleVPuassone::calculate_Ar() {
-#pragma omp parallel
+#pragma omp parallel for collapse(2)
 	for (int j = 1; j < m; j++) {
 		for (int i = 1; i < n; i++) {
 			int idx = j * (n + 1) + i;
@@ -191,7 +191,7 @@ void DirihleVPuassone::calculate_Ar() {
 }
 
 void DirihleVPuassone::calculate_r() {
-#pragma omp parallel
+#pragma omp parallel for collapse(2)
 	for (int j = 1; j < m; j++) {
 		for (int i = 1; i < n; i++) {
 			int idx = j * (n + 1) + i;
@@ -202,3 +202,18 @@ void DirihleVPuassone::calculate_r() {
 
 }
 
+
+
+void DirihleVPuassone::print_final_accuracy() {
+	double max_diff = 0.0;
+	for (int j = 0; j <= m; j++) {
+		double y = c + j * k;
+		for (int i = 0; i <= n; i++) {
+			double x = a + i * h;
+			double exact = sin(x * y * y) * sin(x * y * y); // Твое u_test
+			double diff = std::abs(v[j * (n + 1) + i] - exact);
+			if (diff > max_diff) max_diff = diff;
+		}
+	}
+	std::cout << "Максимальное отклонение от точного решения: " << max_diff << std::endl;
+}

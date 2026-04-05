@@ -15,7 +15,11 @@ public:
 	double h = 0.0, k = 0.0;
 	double inv_h2 = 0.0, inv_k2 = 0.0;
 	double tau = 0.0;
+	int last_iterations = 0;
+	double final_eps = 0.0;
 
+	double error = 1e10;
+	int iter = 0;
 
 	std::vector<double> v;
 	std::vector<double> r;
@@ -40,9 +44,13 @@ public:
 	double Nu3_main(double x); // нижн€€ гранци€ ch(x^2-3x)-1
 	double Nu4_main(double x); // верхн€€ граница 0
 
-	//double delta_u(double x, double y); // sin^2(x*y^2)
+	double delta_u(double x, double y); // sin^2(x*y^2)
 	double f_main(double x, double y); // ch(x-y)
+	void calculate_f_grid_main();
 
+	void prepare_v_and_i_main();
+
+	static double compare(const DirihleVPuassone& solver_low, const DirihleVPuassone& solver_high);
 
 
 	double f_test(double x, double y);
@@ -54,13 +62,17 @@ public:
 
 
 
-	// MMN функции
+	// MMN 
 	double calculate_v_i_j(std::vector<double>& vhod, int i, int j);
 	double scalar_mul(std::vector<double>& vector1, std::vector<double>& vector2);
 	double solve();
 	void calculate_Ar();
 	void calculate_r();
-	void print_final_accuracy();
+	double calculate_epsilon1();
+
+
+
+	static void solver_iterator(DirihleVPuassone &solver, double Err, int N_max);
 };
 
 

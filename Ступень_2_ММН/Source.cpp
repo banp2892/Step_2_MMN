@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Считывание параметров
+
     double a = std::stod(argv[1]);
     double b = std::stod(argv[2]);
     double c = std::stod(argv[3]);
@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
     int n_max = std::stoi(argv[8]);
     int task_type = std::stoi(argv[9]);
 
-    // Вывод параметров в консоль для контроля
+
     std::cout << "--- ПАРАМЕТРЫ ЗАПУСКА ---" << std::endl;
     std::cout << "Область: [" << a << ", " << b << "] x [" << c << ", " << d << "]" << std::endl;
     std::cout << "Сетка: " << n << " x " << m << std::endl;
@@ -67,7 +67,6 @@ int main(int argc, char* argv[]) {
 
         save_to_binary("output_grid.bin", solver.v);
 
-        // Открываем файл в режиме добавления (std::ios::app)
         std::ofstream stats("stats.txt", std::ios::app);
         if (stats.is_open()) {
             stats << "--- Запуск от " << __DATE__ << " " << __TIME__ << " ---" << "\n";

@@ -182,40 +182,46 @@ double DirihleVPuassone::solve() {
 
 void DirihleVPuassone::calculate_Ar() {
 	const int B = 32;
+	const int row_step = n + 1;
+	const double center_coeff = 2.0 * (inv_h2 + inv_k2);
 
-#pragma omp parallel for collapse(2)
+	// Берем сырые указатели для прямой работы с памятью
+	double* __restrict ar_ptr = Ar.data();
+	const double* __restrict r_ptr = r.data();
+
+#pragma omp parallel for
 	for (int jj = 1; jj < m; jj += B) {
+		int j_limit = (jj + B > m) ? m : jj + B;
 		for (int ii = 1; ii < n; ii += B) {
+			int i_limit = (ii + B > n) ? n : ii + B;
 
-			for (int j = jj; j < std::min(jj + B, m); ++j) {
-				int row = j * (n + 1);
-				int prev_row = (j - 1) * (n + 1);
-				int next_row = (j + 1) * (n + 1);
+			for (int j = jj; j < j_limit; ++j) {
+				int row = j * row_step;
+				int prev = row - row_step;
+				int next = row + row_step;
 
-				for (int i = ii; i < std::min(ii + B, n); ++i) {
-					Ar[row + i] = (2.0 * inv_h2 + 2.0 * inv_k2) * r[row + i]
-						- inv_h2 * (r[row + i - 1] + r[row + i + 1])
-						- inv_k2 * (r[prev_row + i] + r[next_row + i]);
+
+				for (int i = ii; i < i_limit; ++i) {
+					ar_ptr[row + i] = center_coeff * r_ptr[row + i]
+						- inv_h2 * (r_ptr[row + i - 1] + r_ptr[row + i + 1])
+						- inv_k2 * (r_ptr[prev + i] + r_ptr[next + i]);
 				}
 			}
 		}
 	}
 }
 void DirihleVPuassone::calculate_r() {
-	const int B = 32; // Размер блока
-
-#pragma omp parallel for collapse(2)
+	const int B = 32;
+#pragma omp parallel for
 	for (int jj = 1; jj < m; jj += B) {
 		for (int ii = 1; ii < n; ii += B) {
 
-			// Обработка конкретного блока
 			for (int j = jj; j < std::min(jj + B, m); ++j) {
 				int row = j * (n + 1);
 				int prev_row = (j - 1) * (n + 1);
 				int next_row = (j + 1) * (n + 1);
 
 				for (int i = ii; i < std::min(ii + B, n); ++i) {
-					// Оператор Лапласа (пятиточечный шаблон)
 					double Lapl = (2.0 * inv_h2 + 2.0 * inv_k2) * v[row + i]
 						- inv_h2 * (v[row + i - 1] + v[row + i + 1])
 						- inv_k2 * (v[prev_row + i] + v[next_row + i]);
@@ -240,7 +246,6 @@ double DirihleVPuassone::calculate_epsilon1() {
             double x = a + i * h;
             int idx = j * (n + 1) + i;
 
-            // Точное решение u* для тестовой задачи (вариант 8)
 			double u_exact = delta_u(x, y);;
             
             double current_diff = std::abs(u_exact - v[idx]);
@@ -258,7 +263,7 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 	double current_error = 1e10;
 	int current_iter = 0;
 
-	// Основной цикл решения
+
 	while (current_error > eps_limit && current_iter < n_max) {
 		current_error = solver.solve();
 		current_iter++;

@@ -195,22 +195,7 @@ void DirihleVPuassone::calculate_r() {
 }
 
 
-void DirihleVPuassone::calculate_both_scalar_products(double& ar_r, double& ar_ar) {
-	double sum_ar_r = 0.0;
-	double sum_ar_ar = 0.0;
-	const int total_nodes = (n + 1) * (m + 1);
-	const double* __restrict ar_ptr = Ar.data();
-	const double* __restrict r_ptr = r.data();
 
-#pragma omp parallel for reduction(+:sum_ar_r, sum_ar_ar)
-	for (int i = 0; i < total_nodes; i++) {
-		double ar_val = ar_ptr[i];
-		sum_ar_r += ar_val * r_ptr[i];
-		sum_ar_ar += ar_val * ar_val;
-	}
-	ar_r = sum_ar_r;
-	ar_ar = sum_ar_ar;
-}
 
 
 double DirihleVPuassone::calculate_epsilon1() {
@@ -282,7 +267,7 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 #pragma omp for reduction(max:local_max_r)
 			for (int i = 0; i < total; i++) {
 				v_p[i] -= tao * r_p[i];
-				double a_r = std::abs(r_p[i]);
+				double a_r = std::fabs(r_p[i]);
 				if (a_r > local_max_r) local_max_r = a_r;
 			}
 

@@ -63,12 +63,12 @@ public:
 
 
 	// MMN 
-	double calculate_v_i_j(std::vector<double>& vhod, int i, int j);
-	double scalar_mul(std::vector<double>& vector1, std::vector<double>& vector2);
-	double solve();
+
+
+
 	void calculate_Ar();
 	void calculate_r();
-	void calculate_both_scalar_products(double& ar_r, double& ar_ar);
+
 	double calculate_epsilon1();
 
 

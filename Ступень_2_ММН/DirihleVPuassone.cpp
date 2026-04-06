@@ -126,33 +126,9 @@ double DirihleVPuassone::Nu4_test(double x)
 	return s * s;
 }
 
-double DirihleVPuassone::calculate_v_i_j(std::vector<double>& vhod, int i, int j)
-{
 
-	int center_idx = j * (n + 1) + i;
 
-	double v_left = vhod[j * (n + 1) + (i - 1)];
-	double v_right = vhod[j * (n + 1) + (i + 1)];
-	double v_down = vhod[(j - 1) * (n + 1) + i];
-	double v_up = vhod[(j + 1) * (n + 1) + i];
-	double v_curr = vhod[center_idx];
 
-	double res = (2.0 * inv_h2 + 2.0 * inv_k2) * v_curr - inv_h2 * (v_left + v_right) - inv_k2 * (v_up + v_down);
-
-	return res;
-}
-
-double DirihleVPuassone::scalar_mul(std::vector<double>& v1, std::vector<double>& v2) {
-	double sum = 0.0;
-#pragma omp parallel for reduction(+:sum)
-	for (int j = 1; j < m; j++) {
-		int row_offset = j * (n + 1);
-		for (int i = 1; i < n; i++) {
-			sum += v1[row_offset + i] * v2[row_offset + i];
-		}
-	}
-	return sum;
-}
 
 
 
@@ -162,8 +138,6 @@ void DirihleVPuassone::calculate_Ar() {
 	const double c_coeff = 2.0 * (inv_h2 + inv_k2);
 	double* __restrict ar_ptr = Ar.data();
 	const double* __restrict r_ptr = r.data();
-
-	// ВАЖНО: Убрали 'parallel', оставили только 'for'
 #pragma omp for
 	for (int j = 1; j < m; j++) {
 		int row = j * row_step;
@@ -180,8 +154,6 @@ void DirihleVPuassone::calculate_r() {
 	double* __restrict r_ptr = r.data();
 	const double* __restrict v_ptr = v.data();
 	const double* __restrict f_ptr = f_grid.data();
-
-	// ТОЛЬКО for, так как мы уже внутри параллельного блока в iterator
 #pragma omp for
 	for (int j = 1; j < m; j++) {
 		const int row = j * row_step;
@@ -223,7 +195,6 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 	double current_error = 1e10;
 	int current_iter = 0;
 
-	// ВАЖНО: Эти переменные ДОЛЖНЫ быть здесь, чтобы быть shared
 	double global_ar_r = 0, global_ar_ar = 0;
 	double local_max_r = 0;
 	double local_ar_r = 0, local_ar_ar = 0;
@@ -232,14 +203,12 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 	{
 		while (current_error > eps_limit && current_iter < n_max) {
 
-			// 1. Расчет r и Ar (внутри только #pragma omp for)
 			solver.calculate_r();
 #pragma omp barrier 
 
 			solver.calculate_Ar();
 #pragma omp barrier 
 
-			// 2. Скалярные произведения
 			local_ar_r = 0;
 			local_ar_ar = 0;
 			const double* ar_p = solver.Ar.data();
@@ -259,7 +228,6 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 			}
 #pragma omp barrier
 
-			// 3. Обновление решения v и поиск ошибки
 			double tao = global_ar_r / (global_ar_ar + 1e-20);
 			local_max_r = 0;
 			double* v_p = solver.v.data();

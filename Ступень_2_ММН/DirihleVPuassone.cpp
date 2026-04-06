@@ -9,6 +9,7 @@ DirihleVPuassone::DirihleVPuassone(double a_t, double b_t, double c_t, double d_
 	h = (b - a) / n;
 	k = (d - c) / m;
 
+
 	inv_h2 = 1.0 / (h * h);
 	inv_k2 = 1.0 / (k * k);
 
@@ -153,80 +154,41 @@ double DirihleVPuassone::scalar_mul(std::vector<double>& v1, std::vector<double>
 	return sum;
 }
 
-double DirihleVPuassone::solve() {
-	calculate_r();
-	calculate_Ar();
-
-	double ar_r, ar_ar;
-	calculate_both_scalar_products(ar_r, ar_ar); // Один вызов вместо двух
-
-	if (ar_ar < 1e-20) return 0.0;
-
-	double tao = ar_r / ar_ar;
-	double max_r = 0.0;
-
-	double* __restrict v_ptr = v.data();
-	const double* __restrict r_ptr = r.data();
-	const int total_nodes = (n + 1) * (m + 1);
-
-#pragma omp parallel for reduction(max:max_r)
-	for (int i = 0; i < total_nodes; i++) {
-		v_ptr[i] -= tao * r_ptr[i];
-		double abs_r = std::abs(r_ptr[i]);
-		if (abs_r > max_r) max_r = abs_r;
-	}
-	return max_r;
-}
 
 
-// Пример оптимизированного calculate_Ar
+
 void DirihleVPuassone::calculate_Ar() {
 	const int row_step = n + 1;
 	const double c_coeff = 2.0 * (inv_h2 + inv_k2);
-	const double h2_inv = inv_h2; // Локальные копии для быстрого доступа
-	const double k2_inv = inv_k2;
-
 	double* __restrict ar_ptr = Ar.data();
 	const double* __restrict r_ptr = r.data();
 
-#pragma omp parallel for
+	// ВАЖНО: Убрали 'parallel', оставили только 'for'
+#pragma omp for
 	for (int j = 1; j < m; j++) {
-		const int row = j * row_step;
-		const int prev = row - row_step;
-		const int next = row + row_step;
-
-		// Этот цикл теперь идеально ложится в AVX2 векторы процессора 5600X
-#pragma omp simd 
+		int row = j * row_step;
 		for (int i = 1; i < n; i++) {
 			ar_ptr[row + i] = c_coeff * r_ptr[row + i]
-				- h2_inv * (r_ptr[row + i - 1] + r_ptr[row + i + 1])
-				- k2_inv * (r_ptr[prev + i] + r_ptr[next + i]);
+				- inv_h2 * (r_ptr[row + i - 1] + r_ptr[row + i + 1])
+				- inv_k2 * (r_ptr[row - row_step + i] + r_ptr[row + row_step + i]);
 		}
 	}
 }
 
 void DirihleVPuassone::calculate_r() {
 	const int row_step = n + 1;
-	const double c_coeff = 2.0 * (inv_h2 + inv_k2);
-	const double h2_inv = inv_h2;
-	const double k2_inv = inv_k2;
-
 	double* __restrict r_ptr = r.data();
 	const double* __restrict v_ptr = v.data();
 	const double* __restrict f_ptr = f_grid.data();
 
-#pragma omp parallel for
+	// ТОЛЬКО for, так как мы уже внутри параллельного блока в iterator
+#pragma omp for
 	for (int j = 1; j < m; j++) {
 		const int row = j * row_step;
-		const int prev = row - row_step;
-		const int next = row + row_step;
-
-#pragma omp simd
 		for (int i = 1; i < n; i++) {
-			double Lapl = c_coeff * v_ptr[row + i]
-				- h2_inv * (v_ptr[row + i - 1] + v_ptr[row + i + 1])
-				- k2_inv * (v_ptr[prev + i] + v_ptr[next + i]);
-
+			double Lapl = (2.0 * inv_h2 + 2.0 * inv_k2) * v_ptr[row + i]
+				- inv_h2 * (v_ptr[row + i - 1] + v_ptr[row + i + 1])
+				- inv_k2 * (v_ptr[row - row_step + i] + v_ptr[row + row_step + i]);
 			r_ptr[row + i] = Lapl - f_ptr[row + i];
 		}
 	}
@@ -272,23 +234,69 @@ double DirihleVPuassone::calculate_epsilon1() {
     return max_diff;
 }
 
-void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limit, int n_max)
-{
+void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limit, int n_max) {
 	double current_error = 1e10;
 	int current_iter = 0;
 
+	// ВАЖНО: Эти переменные ДОЛЖНЫ быть здесь, чтобы быть shared
+	double global_ar_r = 0, global_ar_ar = 0;
+	double local_max_r = 0;
+	double local_ar_r = 0, local_ar_ar = 0;
 
-	while (current_error > eps_limit && current_iter < n_max) {
-		current_error = solver.solve();
-		current_iter++;
-		if (current_iter % 10000 == 0) {
-			std::cout << "PROGRESS:" << current_iter << ":" << current_error << std::endl;
+#pragma omp parallel shared(current_error, current_iter, global_ar_r, global_ar_ar) firstprivate(eps_limit, n_max)
+	{
+		while (current_error > eps_limit && current_iter < n_max) {
+
+			// 1. Расчет r и Ar (внутри только #pragma omp for)
+			solver.calculate_r();
+#pragma omp barrier 
+
+			solver.calculate_Ar();
+#pragma omp barrier 
+
+			// 2. Скалярные произведения
+			local_ar_r = 0;
+			local_ar_ar = 0;
+			const double* ar_p = solver.Ar.data();
+			const double* r_p = solver.r.data();
+			int total = (solver.n + 1) * (solver.m + 1);
+
+#pragma omp for reduction(+:local_ar_r, local_ar_ar)
+			for (int i = 0; i < total; i++) {
+				local_ar_r += ar_p[i] * r_p[i];
+				local_ar_ar += ar_p[i] * ar_p[i];
+			}
+
+#pragma omp master
+			{
+				global_ar_r = local_ar_r;
+				global_ar_ar = local_ar_ar;
+			}
+#pragma omp barrier
+
+			// 3. Обновление решения v и поиск ошибки
+			double tao = global_ar_r / (global_ar_ar + 1e-20);
+			local_max_r = 0;
+			double* v_p = solver.v.data();
+
+#pragma omp for reduction(max:local_max_r)
+			for (int i = 0; i < total; i++) {
+				v_p[i] -= tao * r_p[i];
+				double a_r = std::abs(r_p[i]);
+				if (a_r > local_max_r) local_max_r = a_r;
+			}
+
+#pragma omp master
+			{
+				current_error = local_max_r;
+				current_iter++;
+			}
+#pragma omp barrier 
 		}
 	}
 
 	solver.last_iterations = current_iter;
 	solver.final_eps = current_error;
-
 	std::cout << "FINISH: " << current_iter << " iterations. Error: " << current_error << std::endl;
 }
 

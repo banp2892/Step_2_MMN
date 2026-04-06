@@ -267,7 +267,7 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 	while (current_error > eps_limit && current_iter < n_max) {
 		current_error = solver.solve();
 		current_iter++;
-		if (current_iter % 1000 == 0) {
+		if (current_iter % 5000 == 0) {
 			std::cout << "PROGRESS:" << current_iter << ":" << current_error << std::endl;
 		}
 	}

@@ -129,7 +129,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <OpenMPSupport>true</OpenMPSupport>
-      <AdditionalOptions>/openmp:llvm %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/openmp:experimental /openmp:llvm %(AdditionalOptions)</AdditionalOptions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>

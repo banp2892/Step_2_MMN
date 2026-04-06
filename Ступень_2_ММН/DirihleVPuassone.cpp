@@ -157,84 +157,98 @@ double DirihleVPuassone::solve() {
 	calculate_r();
 	calculate_Ar();
 
-	double ar_r = scalar_mul(Ar, r);
-	double ar_ar = scalar_mul(Ar, Ar);
+	double ar_r, ar_ar;
+	calculate_both_scalar_products(ar_r, ar_ar); // Один вызов вместо двух
 
-	if (std::abs(ar_ar) < 1e-18) return 0.0;
+	if (ar_ar < 1e-20) return 0.0;
 
 	double tao = ar_r / ar_ar;
 	double max_r = 0.0;
 
-#pragma omp parallel for reduction(max:max_r)
-	for (int j = 1; j < m; j++) {
-		int row = j * (n + 1);
-		for (int i = 1; i < n; i++) {
-			int idx = row + i;
-			v[idx] -= tao * r[idx];
+	double* __restrict v_ptr = v.data();
+	const double* __restrict r_ptr = r.data();
+	const int total_nodes = (n + 1) * (m + 1);
 
-			double abs_r = std::abs(r[idx]);
-			if (abs_r > max_r) max_r = abs_r;
-		}
+#pragma omp parallel for reduction(max:max_r)
+	for (int i = 0; i < total_nodes; i++) {
+		v_ptr[i] -= tao * r_ptr[i];
+		double abs_r = std::abs(r_ptr[i]);
+		if (abs_r > max_r) max_r = abs_r;
 	}
 	return max_r;
 }
 
 
+// Пример оптимизированного calculate_Ar
 void DirihleVPuassone::calculate_Ar() {
-	const int B = 32;
 	const int row_step = n + 1;
-	const double center_coeff = 2.0 * (inv_h2 + inv_k2);
+	const double c_coeff = 2.0 * (inv_h2 + inv_k2);
+	const double h2_inv = inv_h2; // Локальные копии для быстрого доступа
+	const double k2_inv = inv_k2;
 
-	// Берем сырые указатели для прямой работы с памятью
 	double* __restrict ar_ptr = Ar.data();
 	const double* __restrict r_ptr = r.data();
 
 #pragma omp parallel for
-	for (int jj = 1; jj < m; jj += B) {
-		int j_limit = (jj + B > m) ? m : jj + B;
-		for (int ii = 1; ii < n; ii += B) {
-			int i_limit = (ii + B > n) ? n : ii + B;
+	for (int j = 1; j < m; j++) {
+		const int row = j * row_step;
+		const int prev = row - row_step;
+		const int next = row + row_step;
 
-			for (int j = jj; j < j_limit; ++j) {
-				int row = j * row_step;
-				int prev = row - row_step;
-				int next = row + row_step;
-
-
-				for (int i = ii; i < i_limit; ++i) {
-					ar_ptr[row + i] = center_coeff * r_ptr[row + i]
-						- inv_h2 * (r_ptr[row + i - 1] + r_ptr[row + i + 1])
-						- inv_k2 * (r_ptr[prev + i] + r_ptr[next + i]);
-				}
-			}
+		// Этот цикл теперь идеально ложится в AVX2 векторы процессора 5600X
+#pragma omp simd 
+		for (int i = 1; i < n; i++) {
+			ar_ptr[row + i] = c_coeff * r_ptr[row + i]
+				- h2_inv * (r_ptr[row + i - 1] + r_ptr[row + i + 1])
+				- k2_inv * (r_ptr[prev + i] + r_ptr[next + i]);
 		}
 	}
 }
+
 void DirihleVPuassone::calculate_r() {
-	const int B = 32;
+	const int row_step = n + 1;
+	const double c_coeff = 2.0 * (inv_h2 + inv_k2);
+	const double h2_inv = inv_h2;
+	const double k2_inv = inv_k2;
+
+	double* __restrict r_ptr = r.data();
+	const double* __restrict v_ptr = v.data();
+	const double* __restrict f_ptr = f_grid.data();
+
 #pragma omp parallel for
-	for (int jj = 1; jj < m; jj += B) {
-		for (int ii = 1; ii < n; ii += B) {
+	for (int j = 1; j < m; j++) {
+		const int row = j * row_step;
+		const int prev = row - row_step;
+		const int next = row + row_step;
 
-			for (int j = jj; j < std::min(jj + B, m); ++j) {
-				int row = j * (n + 1);
-				int prev_row = (j - 1) * (n + 1);
-				int next_row = (j + 1) * (n + 1);
+#pragma omp simd
+		for (int i = 1; i < n; i++) {
+			double Lapl = c_coeff * v_ptr[row + i]
+				- h2_inv * (v_ptr[row + i - 1] + v_ptr[row + i + 1])
+				- k2_inv * (v_ptr[prev + i] + v_ptr[next + i]);
 
-				for (int i = ii; i < std::min(ii + B, n); ++i) {
-					double Lapl = (2.0 * inv_h2 + 2.0 * inv_k2) * v[row + i]
-						- inv_h2 * (v[row + i - 1] + v[row + i + 1])
-						- inv_k2 * (v[prev_row + i] + v[next_row + i]);
-
-					r[row + i] = Lapl - f_grid[row + i];
-				}
-			}
+			r_ptr[row + i] = Lapl - f_ptr[row + i];
 		}
 	}
 }
 
 
+void DirihleVPuassone::calculate_both_scalar_products(double& ar_r, double& ar_ar) {
+	double sum_ar_r = 0.0;
+	double sum_ar_ar = 0.0;
+	const int total_nodes = (n + 1) * (m + 1);
+	const double* __restrict ar_ptr = Ar.data();
+	const double* __restrict r_ptr = r.data();
 
+#pragma omp parallel for reduction(+:sum_ar_r, sum_ar_ar)
+	for (int i = 0; i < total_nodes; i++) {
+		double ar_val = ar_ptr[i];
+		sum_ar_r += ar_val * r_ptr[i];
+		sum_ar_ar += ar_val * ar_val;
+	}
+	ar_r = sum_ar_r;
+	ar_ar = sum_ar_ar;
+}
 
 
 double DirihleVPuassone::calculate_epsilon1() {
@@ -267,7 +281,7 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 	while (current_error > eps_limit && current_iter < n_max) {
 		current_error = solver.solve();
 		current_iter++;
-		if (current_iter % 5000 == 0) {
+		if (current_iter % 10000 == 0) {
 			std::cout << "PROGRESS:" << current_iter << ":" << current_error << std::endl;
 		}
 	}

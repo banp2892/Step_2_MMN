@@ -68,6 +68,7 @@ public:
 	double solve();
 	void calculate_Ar();
 	void calculate_r();
+	void calculate_both_scalar_products(double& ar_r, double& ar_ar);
 	double calculate_epsilon1();
 
 

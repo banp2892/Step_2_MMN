@@ -24,12 +24,18 @@ void save_to_binary(const std::string& filename, const std::vector<double>& data
 
 int main(int argc, char* argv[]) {
     setlocale(LC_ALL, "Russian");
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        std::cout << "Аргумент " << i << ": " << arg << std::endl;
+    }
 
-    if ((argc != 10) || (argc != 12)) {
+    if ((argc != 10) && (argc != 12)) {
         std::cerr << "Использование: " << argv[0]
             << " a b c d n m e_max n_max task_type (e_max_2) (n_max_2)" << std::endl;
         return 1;
     }
+    double e_max_2 = 0.0;
+    int n_max_2 = 0.0;
 
     double a = std::stod(argv[1]);
     double b = std::stod(argv[2]);
@@ -40,8 +46,10 @@ int main(int argc, char* argv[]) {
     double e_max = std::stod(argv[7]); // критерий остановки по точности 
     int n_max = std::stoi(argv[8]); // критерий остановки по числу итераций
     int task_type = std::stoi(argv[9]); // 0 - тестовая, 1 - основная
-    double e_max_2 = std::stod(argv[10]); // второй потолок по точности для удвоенной сетки
-    int n_max_2 = std::stoi(argv[11]); // по шагам для второй сетки
+    if (argc == 12) {
+        double e_max_2 = std::stod(argv[10]); // второй потолок по точности для удвоенной сетки
+        int n_max_2 = std::stoi(argv[11]); // по шагам для второй сетки
+    }
 
 
     int total_n = 0; // количество затраченный итераций
@@ -59,8 +67,6 @@ int main(int argc, char* argv[]) {
 
     // для основной
     double main_r_0 = 0.0; //   На основной сетке невязка СЛАУ на начальном приближении || R(0) || = «___» (указать норму невязки и тип нормы)
-    double e_max_2 = 0.0; // критерий остановки по точности для удвоенной сетки
-    double n_max_2 = 0.0; // критерий остановки по числу итераций для удвоенной сетки
     int total_n_2 = 0; // На решение задачи (СЛАУ) затрачено итераций N2 =«__» 
     double total_e_n_2 = 0.0; // достигнута точ- ность итерационного метода ε(N2) = «__»
     double r_n_2 = 0.0;
@@ -88,10 +94,12 @@ int main(int argc, char* argv[]) {
         First_object.prepare_v_and_i_main();
 
         DirihleVPuassone Second_object(a, n, c, d, n*2, m*2); // удвоенная сетка 
+        Second_object.prepare_v_and_i_main();
 
         main_r_0 = First_object.get_chebyshov_norma_for_vector(First_object.r);
 
         DirihleVPuassone::solver_iterator(First_object, e_max, n_max); // считаем все что надо
+
         total_n = First_object.last_iterations;
         total_e = First_object.final_eps;
 
@@ -138,12 +146,15 @@ int main(int argc, char* argv[]) {
             stats << n_max_2 << " ";
             stats << total_n_2 << " "
                 << total_e_n_2 << " "
-                << r_2n << " "
-                ;
+                << r_n_2 << " "
+                << E2 << " ";
+            stats << x << " " << y << " ";
+            stats << main_r_0_2 << " ";
+                
 
         }
 
-
+        stats << std::endl;
         stats.close();
     }
     return 0;

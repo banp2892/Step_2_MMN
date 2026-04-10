@@ -19,6 +19,7 @@ DirihleVPuassone::DirihleVPuassone(double a_t, double b_t, double c_t, double d_
 	r.assign(total_nodes, 0.0); // вектор невязок r заполняем нулями
 	Ar.assign(total_nodes, 0.0); // вектор произведение Ar заполняем нулями
 	f_grid.assign(total_nodes, 0.0); // правая часть f_grid заполняем нулями
+	u.assign(total_nodes, 0.0);
 }
 
 

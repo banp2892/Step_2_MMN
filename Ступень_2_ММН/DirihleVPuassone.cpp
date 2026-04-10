@@ -201,8 +201,14 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 
 #pragma omp parallel shared(current_error, current_iter, global_ar_r, global_ar_ar) firstprivate(eps_limit, n_max)
 	{
-		while (current_error > eps_limit && current_iter < n_max) {
 
+		while (current_error > eps_limit && current_iter < n_max) {
+#pragma omp master
+			{
+			if (current_iter % 5000 == 0) {
+				std::cout << "current_error = " << current_error << " " << "current_iter = " << current_iter << std::endl;
+			}
+			}
 			solver.calculate_r();
 #pragma omp barrier 
 
@@ -321,3 +327,64 @@ void DirihleVPuassone::prepare_v_and_i_main()
 	return max_diff;
 }
 
+
+ double DirihleVPuassone::get_test_error(double& max_x, double& max_y) {
+	 double max_diff = 0.0;
+	 max_x = a;
+	 max_y = c;
+
+	 for (int j = 0; j <= m; j++) {
+		 double y = c + j * k;
+		 for (int i = 0; i <= n; i++) {
+			 double x = a + i * h;
+			 int idx = j * (n + 1) + i;
+
+			 // Используем аналитическое решение u*(x,y)
+			 double u_exact = delta_u(x, y);
+			 double current_diff = std::abs(u_exact - v[idx]);
+
+			 if (current_diff > max_diff) {
+				 max_diff = current_diff;
+				 max_x = x;
+				 max_y = y;
+			 }
+		 }
+	 }
+	 return max_diff;
+ }
+
+
+ double DirihleVPuassone::compare_with_half_step(const DirihleVPuassone& solver_high, double& max_x, double& max_y) {
+	 double max_diff = 0.0;
+	 max_x = a;
+	 max_y = c;
+
+	 // solver_high должна иметь n_h = 2*n, m_h = 2*m
+	 for (int j = 0; j <= m; j++) {
+		 double y = c + j * k;
+		 for (int i = 0; i <= n; i++) {
+			 double x = a + i * h;
+
+			 int idx_low = j * (n + 1) + i;
+			 int idx_high = (2 * j) * (solver_high.n + 1) + (2 * i);
+
+			 double diff = std::abs(v[idx_low] - solver_high.v[idx_high]);
+
+			 if (diff > max_diff) {
+				 max_diff = diff;
+				 max_x = x;
+				 max_y = y;
+			 }
+		 }
+	 }
+	 return max_diff;
+ }
+
+ double DirihleVPuassone::get_initial_residual() {
+	 calculate_r(); // Считает текущую невязку r = Av - f
+	 double max_r = 0.0;
+	 for (double val : r) {
+		 if (std::abs(val) > max_r) max_r = std::abs(val);
+	 }
+	 return max_r;
+ }

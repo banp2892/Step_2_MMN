@@ -33,12 +33,6 @@ public:
 	void prepare_v_and_i_test();
 
 
-	
-
-
-
-
-
 	double Nu1_main(double y); // левая граница sin^2(pi*y)
 	double Nu2_main(double y); // правая граница 0
 	double Nu3_main(double x); // нижняя гранция ch(x^2-3x)-1
@@ -51,6 +45,12 @@ public:
 	void prepare_v_and_i_main();
 
 	static double compare(const DirihleVPuassone& solver_low, const DirihleVPuassone& solver_high);
+
+	double get_test_error(double& max_x, double& max_y);
+
+	double compare_with_half_step(const DirihleVPuassone& solver_high, double& max_x, double& max_y);
+
+	double get_initial_residual();
 
 
 	double f_test(double x, double y);

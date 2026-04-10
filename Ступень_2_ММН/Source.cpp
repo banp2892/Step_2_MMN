@@ -14,7 +14,6 @@ std::chrono::milliseconds howLong(std::function<void()> what) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
 }
 
-
 void save_to_binary(const std::string& filename, const std::vector<double>& data) {
     std::ofstream out(filename, std::ios::binary);
     if (out.is_open()) {
@@ -32,7 +31,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-
     double a = std::stod(argv[1]);
     double b = std::stod(argv[2]);
     double c = std::stod(argv[3]);
@@ -43,47 +41,78 @@ int main(int argc, char* argv[]) {
     int n_max = std::stoi(argv[8]);
     int task_type = std::stoi(argv[9]);
 
-
-    std::cout << "--- ПАРАМЕТРЫ ЗАПУСКА ---" << std::endl;
-    std::cout << "Область: [" << a << ", " << b << "] x [" << c << ", " << d << "]" << std::endl;
-    std::cout << "Сетка: " << n << " x " << m << std::endl;
-    std::cout << "Точность (eps): " << e_max << ", Макс. итераций: " << n_max << std::endl;
-    std::cout << "Тип задачи: " << (task_type == 0 ? "Тестовая" : "Основная") << std::endl;
-    std::cout << "-------------------------" << std::endl;
-
     try {
         DirihleVPuassone solver(a, b, c, d, n, m);
 
-        if (task_type == 0) {
-            solver.prepare_v_and_i_test();
-        }
-        else {
-            solver.prepare_v_and_i_main();
-        }
+        // 1. Подготовка и начальная невязка
+        if (task_type == 0) solver.prepare_v_and_i_test();
+        else solver.prepare_v_and_i_main();
 
+        double initial_res = solver.get_initial_residual(); // Нужно добавить в .cpp [cite: 116, 153]
+
+        // 2. Основной расчет
         auto duration = howLong([&]() {
             DirihleVPuassone::solver_iterator(solver, e_max, n_max);
             });
+        std::chrono::milliseconds time_for_2n_2m = std::chrono::milliseconds(0);
 
+        // 3. Сбор данных для справки
+        double error_val = 0.0;
+        double mx = 0.0, my = 0.0;
+        std::string task_name = (task_type == 0 ? "ТЕСТОВАЯ" : "ОСНОВНАЯ");
+
+        if (task_type == 0) {
+            // Тестовая задача: погрешность e1 [cite: 63, 64]
+            error_val = solver.get_test_error(mx, my);
+        }
+        else {
+            // Основная задача: точность e2 (требует вторую сетку 2n x 2m)
+            std::cout << "Запуск на измельченной сетке для оценки e2..." << std::endl;
+            DirihleVPuassone solver2(a, b, c, d, n * 2, m * 2);
+            
+            solver2.prepare_v_and_i_main();
+            time_for_2n_2m = howLong([&]() {
+                DirihleVPuassone::solver_iterator(solver2, e_max, n_max);
+            });
+            
+
+            error_val = solver.compare_with_half_step(solver2, mx, my);
+        }
+
+        // 4. Сохранение результатов
         save_to_binary("output_grid.bin", solver.v);
+
 
         std::ofstream stats("stats.txt", std::ios::app);
         if (stats.is_open()) {
-            stats << "--- Запуск от " << __DATE__ << " " << __TIME__ << " ---" << "\n";
-            stats << "Задача: " << (task_type == 0 ? "Test" : "Main") << "\n";
-            stats << "Границы: " << a << " " << b << " " << c << " " << d << "\n";
-            stats << "Сетка (N x M): " << n << " x " << m << "\n";
-            stats << "Время (мс): " << duration.count() << "\n";
-            stats << "Итераций: " << solver.last_iterations << "\n";
-            stats << "Финальная невязка: " << solver.final_eps << "\n";
-            stats << "------------------------------------------" << "\n\n";
+            stats << "=== СПРАВКА: " << task_name << " ЗАДАЧА ===" << "\n";
+            std::time_t now = std::time(nullptr);
+            std::tm ltm;
+            localtime_s(&ltm, &now); 
+            stats << "Дата запуска: "
+                << std::put_time(&ltm, "%d.%m.%Y %H:%M:%S") << "\n";
+            stats << "Сетка: " << n << " x " << m << "\n";
+            stats << "Метод: Минимальных невязок\n";
+            stats << "Параметры остановки: eps=" << e_max << ", Nmax=" << n_max << "\n";
+            stats << "Начальная невязка: " << initial_res << "\n";
+            stats << "Итераций затрачено: " << solver.last_iterations << "\n";
+            stats << "Достигнутая точность метода: " << solver.final_eps << "\n";
+
+                if (task_type == 0) {
+                    stats << "Погрешность e1: " << error_val << "\n";
+                }
+                else {
+                    stats << "Точность e2 (сравнение сеток): " << error_val << "\n";
+                }
+            stats << "Узел макс. отклонения: x=" << mx << ", y=" << my << "\n";
+                stats << "Время расчета на изначально сетке: " << duration.count() << " мс\n";
+                stats << "Время расчета на удвоенной сетке: " << time_for_2n_2m.count() << " мс\n";
+            stats << "------------------------------------------\n\n";
             stats.close();
         }
 
-        std::cout << "Время выполнения: " << duration.count() << " мс" << std::endl;
-        std::cout << "Итераций выполнено: " << solver.last_iterations << std::endl;
-        std::cout << "Финальная ошибка: " << solver.final_eps << std::endl;
-        std::cout << "SUCCESS" << std::endl;
+        std::cout << "\nРасчет завершен успешно (SUCCESS)." << std::endl;
+        std::cout << "Результат записан в stats.txt" << std::endl;
 
     }
     catch (const std::exception& e) {

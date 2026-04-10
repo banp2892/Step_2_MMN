@@ -15,10 +15,10 @@ DirihleVPuassone::DirihleVPuassone(double a_t, double b_t, double c_t, double d_
 
 	int total_nodes = (n + 1) * (m + 1);
 
-	v.assign(total_nodes, 0.0);
-	r.assign(total_nodes, 0.0);
-	Ar.assign(total_nodes, 0.0);
-	f_grid.assign(total_nodes, 0.0);
+	v.assign(total_nodes, 0.0); // вектор v заполн€ем нул€ми
+	r.assign(total_nodes, 0.0); // вектор нев€зок r заполн€ем нул€ми
+	Ar.assign(total_nodes, 0.0); // вектор произведение Ar заполн€ем нул€ми
+	f_grid.assign(total_nodes, 0.0); // права€ часть f_grid заполн€ем нул€ми
 }
 
 
@@ -190,6 +190,73 @@ double DirihleVPuassone::calculate_epsilon1() {
     }
     return max_diff;
 }
+
+void DirihleVPuassone::calculate_delta_u()
+{
+	const int row_step = n + 1;
+	double* __restrict u_ptr = u.data();
+
+#pragma omp parallel for
+	for (int j = 0; j <= m; j++) {
+		const int row_offset = j * row_step;
+		const double y = c + k * j;
+		for (int i = 0; i <= n; i++) {
+			const double x = a + h * i;
+
+			u_ptr[row_offset + i] = delta_u(x, y);
+		}
+	}
+}
+
+std::vector<double> DirihleVPuassone::calculate_vec_diff(const std::vector<double>& v1, const std::vector<double>& v2)
+{
+	
+	if (v1.size() != v2.size()) {
+		
+		std::cout << "ќшибка, размеры векторов при сравнении разные: v1.size() = " << v1.size() << ", v2.size() = " << v2.size() << std::endl;
+		return std::vector<double>(0);
+	}
+
+	std::vector<double> result(v1.size());
+
+	const int row_step = n + 1;
+
+
+	for (int j = 0; j < m; j++) {
+		for (int i = 0; i < n; i++) {
+			int idx = row_step * j + i;
+			result[idx] = v1[idx] - v2[idx];
+		}
+	}
+
+	return result;
+}
+
+std::vector<double> DirihleVPuassone::get_subsampled_v2(const std::vector<double>& v_high, int n_low, int m_low)
+{
+
+	std::vector<double> result((n_low + 1) * (m_low + 1));
+
+	int n_high = 2 * n_low;
+	int row_step_high = n_high + 1;
+	int row_step_low = n_low + 1;
+
+	for (int j = 0; j <= m_low; j++) {
+		for (int i = 0; i <= n_low; i++) {
+
+			int idx_low = j * row_step_low + i;
+
+
+			int idx_high = (2 * j) * row_step_high + (2 * i);
+
+			result[idx_low] = v_high[idx_high];
+		}
+	}
+
+	return result;
+}
+
+
 
 void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limit, int n_max) {
 	double current_error = 1e10;
@@ -380,11 +447,25 @@ void DirihleVPuassone::prepare_v_and_i_main()
 	 return max_diff;
  }
 
- double DirihleVPuassone::get_initial_residual() {
-	 calculate_r(); // —читает текущую нев€зку r = Av - f
-	 double max_r = 0.0;
-	 for (double val : r) {
-		 if (std::abs(val) > max_r) max_r = std::abs(val);
+ double DirihleVPuassone::get_chebyshov_norma_for_vector(const std::vector<double> &v1) {
+
+	 double max_ret = 0.0;
+#pragma omp parallel for reduction(max:max_ret)
+	 for (int i = 0; i < v1.size(); i++) {
+		 double val = std::abs(v1[i]);
+		 if (val > max_ret) {
+			 max_ret = val;
+		 }
 	 }
-	 return max_r;
+	 return max_ret;
+ }
+
+ double DirihleVPuassone::get_evklid_norma_for_vector(const std::vector<double>& v1) {
+
+	 double sum = 0.0;
+#pragma omp parallel for reduction(+:sum)
+	 for (int i = 0; i < (int)v1.size(); ++i) {
+		 sum += v1[i] * v1[i];
+	 }
+	 return std::sqrt(sum);
  }

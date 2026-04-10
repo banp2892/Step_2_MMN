@@ -1,4 +1,4 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <iomanip>
 #include <clocale>
 #include "DirihleVPuassone.h"
@@ -25,9 +25,9 @@ void save_to_binary(const std::string& filename, const std::vector<double>& data
 int main(int argc, char* argv[]) {
     setlocale(LC_ALL, "Russian");
 
-    if (argc < 10) {
-        std::cerr << "Использование: " << argv[0]
-            << " a b c d n m e_max n_max task_type" << std::endl;
+    if ((argc != 10) || (argc != 12)) {
+        std::cerr << "РСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ: " << argv[0]
+            << " a b c d n m e_max n_max task_type (e_max_2) (n_max_2)" << std::endl;
         return 1;
     }
 
@@ -37,88 +37,114 @@ int main(int argc, char* argv[]) {
     double d = std::stod(argv[4]);
     int n = std::stoi(argv[5]);
     int m = std::stoi(argv[6]);
-    double e_max = std::stod(argv[7]);
-    int n_max = std::stoi(argv[8]);
-    int task_type = std::stoi(argv[9]);
+    double e_max = std::stod(argv[7]); // РєСЂРёС‚РµСЂРёР№ РѕСЃС‚Р°РЅРѕРІРєРё РїРѕ С‚РѕС‡РЅРѕСЃС‚Рё 
+    int n_max = std::stoi(argv[8]); // РєСЂРёС‚РµСЂРёР№ РѕСЃС‚Р°РЅРѕРІРєРё РїРѕ С‡РёСЃР»Сѓ РёС‚РµСЂР°С†РёР№
+    int task_type = std::stoi(argv[9]); // 0 - С‚РµСЃС‚РѕРІР°СЏ, 1 - РѕСЃРЅРѕРІРЅР°СЏ
+    double e_max_2 = std::stod(argv[10]); // РІС‚РѕСЂРѕР№ РїРѕС‚РѕР»РѕРє РїРѕ С‚РѕС‡РЅРѕСЃС‚Рё РґР»СЏ СѓРґРІРѕРµРЅРЅРѕР№ СЃРµС‚РєРё
+    int n_max_2 = std::stoi(argv[11]); // РїРѕ С€Р°РіР°Рј РґР»СЏ РІС‚РѕСЂРѕР№ СЃРµС‚РєРё
 
-    try {
-        DirihleVPuassone solver(a, b, c, d, n, m);
 
-        // 1. Подготовка и начальная невязка
-        if (task_type == 0) solver.prepare_v_and_i_test();
-        else solver.prepare_v_and_i_main();
+    int total_n = 0; // РєРѕР»РёС‡РµСЃС‚РІРѕ Р·Р°С‚СЂР°С‡РµРЅРЅС‹Р№ РёС‚РµСЂР°С†РёР№
+    double total_e = 0.0; // РґРѕСЃС‚РёРіРЅСѓС‚Р°СЏ С‚РѕС‡РЅРѕСЃС‚СЊ РёС‚РµСЂР°С†РёРѕРЅРЅРѕРіРѕ РјРµС‚РѕРґР° 
+    double r_n = 0.0; // Р·РЅР°С‡РµРЅРёРµ РЅРµРІСЏР·РєРё
 
-        double initial_res = solver.get_initial_residual(); // Нужно добавить в .cpp [cite: 116, 153]
+    std::vector<double> vector_diff((n+1)*(m+1));
 
-        // 2. Основной расчет
-        auto duration = howLong([&]() {
-            DirihleVPuassone::solver_iterator(solver, e_max, n_max);
-            });
-        std::chrono::milliseconds time_for_2n_2m = std::chrono::milliseconds(0);
+    //РґР»СЏ С‚РµСЃС‚РѕРІРѕР№ Р·Р°РґР°С‡Рё
+    double E1 = 0.0; // Р·Р°РґР°С‡Р° СЂРµС€РµРЅР° СЃ РїРѕРіСЂРµС€РЅРѕСЃС‚СЊСЋ E1
+    double x, y = 0.0; // РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ РѕС‚РєР»РѕРЅРµРЅРёРµ С‚РѕС‡РЅРѕРіРѕ Рё С‡РёСЃР»РµРЅРЅРѕРіРѕ СЂРµС€РµРЅРёР№ РЅР°Р±Р»СЋРґР°РµС‚СЃСЏ РІ СѓР·Р»Рµ
+    double test_r_0 = 0.0; // РќРµРІСЏР·РєР° РЎР›РђРЈ РЅР° РЅР°С‡Р°Р»СЊРЅРѕРј РїСЂРёР±Р»РёР¶РµРЅРёРё || R(0) || = 
+    double max_dif = 0.0; // РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ РѕС‚РєР»РѕРЅРµРЅРёРµ С‚РѕС‡РЅРѕРіРѕ Рё С‡РёСЃР»РµРЅРЅРѕРіРѕ СЂРµС€РµРЅРёР№
+    
 
-        // 3. Сбор данных для справки
-        double error_val = 0.0;
-        double mx = 0.0, my = 0.0;
-        std::string task_name = (task_type == 0 ? "ТЕСТОВАЯ" : "ОСНОВНАЯ");
+    // РґР»СЏ РѕСЃРЅРѕРІРЅРѕР№
+    double main_r_0 = 0.0; //   РќР° РѕСЃРЅРѕРІРЅРѕР№ СЃРµС‚РєРµ РЅРµРІСЏР·РєР° РЎР›РђРЈ РЅР° РЅР°С‡Р°Р»СЊРЅРѕРј РїСЂРёР±Р»РёР¶РµРЅРёРё || R(0) || = В«___В» (СѓРєР°Р·Р°С‚СЊ РЅРѕСЂРјСѓ РЅРµРІСЏР·РєРё Рё С‚РёРї РЅРѕСЂРјС‹)
+    double e_max_2 = 0.0; // РєСЂРёС‚РµСЂРёР№ РѕСЃС‚Р°РЅРѕРІРєРё РїРѕ С‚РѕС‡РЅРѕСЃС‚Рё РґР»СЏ СѓРґРІРѕРµРЅРЅРѕР№ СЃРµС‚РєРё
+    double n_max_2 = 0.0; // РєСЂРёС‚РµСЂРёР№ РѕСЃС‚Р°РЅРѕРІРєРё РїРѕ С‡РёСЃР»Сѓ РёС‚РµСЂР°С†РёР№ РґР»СЏ СѓРґРІРѕРµРЅРЅРѕР№ СЃРµС‚РєРё
+    int total_n_2 = 0; // РќР° СЂРµС€РµРЅРёРµ Р·Р°РґР°С‡Рё (РЎР›РђРЈ) Р·Р°С‚СЂР°С‡РµРЅРѕ РёС‚РµСЂР°С†РёР№ N2 =В«__В» 
+    double total_e_n_2 = 0.0; // РґРѕСЃС‚РёРіРЅСѓС‚Р° С‚РѕС‡- РЅРѕСЃС‚СЊ РёС‚РµСЂР°С†РёРѕРЅРЅРѕРіРѕ РјРµС‚РѕРґР° Оµ(N2) = В«__В»
+    double r_n_2 = 0.0;
+    double E2 = 0.0;
+    double main_r_0_2 = 0.0;
 
-        if (task_type == 0) {
-            // Тестовая задача: погрешность e1 [cite: 63, 64]
-            error_val = solver.get_test_error(mx, my);
+    DirihleVPuassone First_object(a, b, c, d, n, m); // СЃРѕР·РґР°РµРј РѕР±СЉРµРєС‚ РєР»Р°СЃСЃР°
+
+    if (task_type == 0) {
+        First_object.prepare_v_and_i_test();
+        test_r_0 = First_object.get_chebyshov_norma_for_vector(First_object.r);
+
+        DirihleVPuassone::solver_iterator(First_object, e_max, n_max); // СЃС‡РёС‚Р°РµРј РІСЃРµ С‡С‚Рѕ РЅР°РґРѕ
+        total_n = First_object.last_iterations;
+        total_e = First_object.final_eps;
+        First_object.calculate_delta_u(); // СЃС‡РёС‚Р°РµРј С‚РѕС‡РЅСѓСЋ РјР°С‚СЂРёС†Сѓ РїРѕ Р·Р°РґР°РЅРЅРѕР№ С„СѓРЅРєС†РёРё delta_u
+
+        vector_diff = First_object.calculate_vec_diff(First_object.u, First_object.v); // СЃС‡РёС‚Р°РµРј РІРµРєС‚РѕСЂ u - v
+        r_n = First_object.get_chebyshov_norma_for_vector(First_object.r);
+        E1 = First_object.get_chebyshov_norma_for_vector(vector_diff);
+
+        max_dif = First_object.get_test_error(x, y);
+    }
+    else {
+        First_object.prepare_v_and_i_main();
+
+        DirihleVPuassone Second_object(a, n, c, d, n*2, m*2); // СѓРґРІРѕРµРЅРЅР°СЏ СЃРµС‚РєР° 
+
+        main_r_0 = First_object.get_chebyshov_norma_for_vector(First_object.r);
+
+        DirihleVPuassone::solver_iterator(First_object, e_max, n_max); // СЃС‡РёС‚Р°РµРј РІСЃРµ С‡С‚Рѕ РЅР°РґРѕ
+        total_n = First_object.last_iterations;
+        total_e = First_object.final_eps;
+
+
+        DirihleVPuassone::solver_iterator(Second_object, e_max_2, n_max_2); // СЃС‡РёС‚Р°РµРј РІСЃРµ С‡С‚Рѕ РЅР°РґРѕ
+
+        Second_object.v2 = Second_object.get_subsampled_v2(Second_object.v, n, m);
+
+        vector_diff = First_object.calculate_vec_diff(First_object.v, Second_object.v2);
+
+        total_n_2 = Second_object.last_iterations;
+        total_e_n_2 = Second_object.final_eps;
+
+        r_n_2 = Second_object.get_chebyshov_norma_for_vector(Second_object.v);
+
+        
+        E2 = Second_object.get_chebyshov_norma_for_vector(vector_diff);
+        max_dif = First_object.compare_with_half_step(Second_object, x, y);
+    }
+
+
+    // Р·Р°РїРёСЃС‹РІР°РµРј РІ С„Р°Р№Р» СЂРµР·СѓР»СЊС‚Р°С‚С‹
+    std::ofstream stats("stats.txt", std::ios::app);
+    if (stats.is_open()) {
+        stats << n << " " 
+              << m << " ";
+        stats << e_max << " " 
+              << n_max << " ";
+        stats << total_n << " "
+              << total_e << " "
+              << r_n << " "
+            ;
+
+
+        if (task_type == 0) { // С‚РµСЃС‚РѕРІР°СЏ Р·Р°РґР°С‡Р° 
+            stats << E1 << " ";
+            stats << x << " " << y << " ";
+            stats << test_r_0 << " ";
+
         }
         else {
-            // Основная задача: точность e2 (требует вторую сетку 2n x 2m)
-            std::cout << "Запуск на измельченной сетке для оценки e2..." << std::endl;
-            DirihleVPuassone solver2(a, b, c, d, n * 2, m * 2);
-            
-            solver2.prepare_v_and_i_main();
-            time_for_2n_2m = howLong([&]() {
-                DirihleVPuassone::solver_iterator(solver2, e_max, n_max);
-            });
-            
+            stats << main_r_0 << " ";
+            stats << e_max_2 << " ";
+            stats << n_max_2 << " ";
+            stats << total_n_2 << " "
+                << total_e_n_2 << " "
+                << r_2n << " "
+                ;
 
-            error_val = solver.compare_with_half_step(solver2, mx, my);
         }
 
-        // 4. Сохранение результатов
-        save_to_binary("output_grid.bin", solver.v);
 
-
-        std::ofstream stats("stats.txt", std::ios::app);
-        if (stats.is_open()) {
-            stats << "=== СПРАВКА: " << task_name << " ЗАДАЧА ===" << "\n";
-            std::time_t now = std::time(nullptr);
-            std::tm ltm;
-            localtime_s(&ltm, &now); 
-            stats << "Дата запуска: "
-                << std::put_time(&ltm, "%d.%m.%Y %H:%M:%S") << "\n";
-            stats << "Сетка: " << n << " x " << m << "\n";
-            stats << "Метод: Минимальных невязок\n";
-            stats << "Параметры остановки: eps=" << e_max << ", Nmax=" << n_max << "\n";
-            stats << "Начальная невязка: " << initial_res << "\n";
-            stats << "Итераций затрачено: " << solver.last_iterations << "\n";
-            stats << "Достигнутая точность метода: " << solver.final_eps << "\n";
-
-                if (task_type == 0) {
-                    stats << "Погрешность e1: " << error_val << "\n";
-                }
-                else {
-                    stats << "Точность e2 (сравнение сеток): " << error_val << "\n";
-                }
-            stats << "Узел макс. отклонения: x=" << mx << ", y=" << my << "\n";
-                stats << "Время расчета на изначально сетке: " << duration.count() << " мс\n";
-                stats << "Время расчета на удвоенной сетке: " << time_for_2n_2m.count() << " мс\n";
-            stats << "------------------------------------------\n\n";
-            stats.close();
-        }
-
-        std::cout << "\nРасчет завершен успешно (SUCCESS)." << std::endl;
-        std::cout << "Результат записан в stats.txt" << std::endl;
-
+        stats.close();
     }
-    catch (const std::exception& e) {
-        std::cerr << "Ошибка: " << e.what() << std::endl;
-        return 1;
-    }
-
     return 0;
 }

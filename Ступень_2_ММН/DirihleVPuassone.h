@@ -15,16 +15,24 @@ public:
 	double h = 0.0, k = 0.0;
 	double inv_h2 = 0.0, inv_k2 = 0.0;
 	double tau = 0.0;
-	int last_iterations = 0;
-	double final_eps = 0.0;
+	int last_iterations = 0; // количество итераций
+	double final_eps = 0.0; // достигнутая точность
+	double r_0 = 0.0; // начальная невязка
+	double r_n = 0.0; // невязка в конце
 
-	double error = 1e10;
-	int iter = 0;
+
+	double error = 1e10; // начальная ошибка
+	int iter = 0; // начальное число итераций
 
 	std::vector<double> v;
 	std::vector<double> r;
 	std::vector<double> Ar;
 	std::vector<double> f_grid;
+
+
+	std::vector<double> u; // точное решение тестовой задачи
+	std::vector<double> v2; // удвоенная сетка для основной задачи
+	std::vector<double> diff_v_and_u;
 	
 	
 
@@ -50,7 +58,9 @@ public:
 
 	double compare_with_half_step(const DirihleVPuassone& solver_high, double& max_x, double& max_y);
 
-	double get_initial_residual();
+	double get_chebyshov_norma_for_vector(const std::vector<double>& v1); // считаем норму невязки по чебышеву на текщем шаге
+
+	double get_evklid_norma_for_vector(const std::vector<double>& v1);
 
 
 	double f_test(double x, double y);
@@ -70,8 +80,10 @@ public:
 	void calculate_r();
 
 	double calculate_epsilon1();
+	void calculate_delta_u();
+	std::vector<double> calculate_vec_diff(const std::vector<double>& v1, const std::vector<double>& v2);
 
-
+	std::vector<double> get_subsampled_v2(const std::vector<double>& v_high, int n_low, int m_low);
 
 	static void solver_iterator(DirihleVPuassone &solver, double Err, int N_max);
 };

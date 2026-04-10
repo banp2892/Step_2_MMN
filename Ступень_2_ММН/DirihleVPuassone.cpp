@@ -262,74 +262,90 @@ std::vector<double> DirihleVPuassone::get_subsampled_v2(const std::vector<double
 
 
 void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limit, int n_max) {
+	// 1. Инициализация управляющих переменных
 	double current_error = 1e10;
 	int current_iter = 0;
+	const int total = (solver.n + 1) * (solver.m + 1);
 
-	double global_ar_r = 0, global_ar_ar = 0;
-	double local_max_r = 0;
-	double local_ar_r = 0, local_ar_ar = 0;
+	// 2. Объявляем переменные здесь, чтобы они были SHARED для параллельной секции.
+	// Это необходимо для корректной работы директивы reduction.
+	double g_ar_r = 0, g_ar_ar = 0;
+	double l_ar_r = 0, l_ar_ar = 0;
+	double l_max_r = 0;
 
-#pragma omp parallel shared(current_error, current_iter, global_ar_r, global_ar_ar) firstprivate(eps_limit, n_max)
+	// Начало параллельной области
+#pragma omp parallel shared(current_error, current_iter, g_ar_r, g_ar_ar, l_ar_r, l_ar_ar, l_max_r)
 	{
-
 		while (current_error > eps_limit && current_iter < n_max) {
-#pragma omp master
-			{
-			if (current_iter % 5000 == 0) {
-				std::cout << "current_error = " << current_error << " " << "current_iter = " << current_iter << std::endl;
-			}
-			}
+
+			// Вычисляем невязку r и результат оператора Ar
+			// Внутри этих функций должны быть только #pragma omp for (без parallel)
 			solver.calculate_r();
-#pragma omp barrier 
-
 			solver.calculate_Ar();
-#pragma omp barrier 
 
-			local_ar_r = 0;
-			local_ar_ar = 0;
+			// Сброс локальных сумм перед редукцией
+#pragma omp single
+			{
+				l_ar_r = 0.0;
+				l_ar_ar = 0.0;
+			} // Здесь неявный барьер
+
 			const double* ar_p = solver.Ar.data();
 			const double* r_p = solver.r.data();
-			int total = (solver.n + 1) * (solver.m + 1);
 
-#pragma omp for reduction(+:local_ar_r, local_ar_ar)
+			// 3. Вычисляем скалярные произведения (Ar, r) и (Ar, Ar)
+#pragma omp for reduction(+:l_ar_r, l_ar_ar)
 			for (int i = 0; i < total; i++) {
-				local_ar_r += ar_p[i] * r_p[i];
-				local_ar_ar += ar_p[i] * ar_p[i];
+				l_ar_r += ar_p[i] * r_p[i];
+				l_ar_ar += ar_p[i] * ar_p[i];
 			}
 
-#pragma omp master
+			// Вычисляем итерационный параметр tau
+#pragma omp single
 			{
-				global_ar_r = local_ar_r;
-				global_ar_ar = local_ar_ar;
-			}
-#pragma omp barrier
+				g_ar_r = l_ar_r;
+				g_ar_ar = l_ar_ar;
+				l_max_r = 0.0; // Сброс для поиска максимума на текущем шаге
+			} // Здесь неявный барьер
 
-			double tao = global_ar_r / (global_ar_ar + 1e-20);
-			local_max_r = 0;
+			// Добавляем малую добавку 1e-25, чтобы избежать NaN при делении на ноль
+			double tao = g_ar_r / (g_ar_ar + 1e-25);
 			double* v_p = solver.v.data();
 
-#pragma omp for reduction(max:local_max_r)
+			// 4. Обновляем решение v = v - tau * r и ищем максимальную невязку
+#pragma omp for reduction(max:l_max_r)
 			for (int i = 0; i < total; i++) {
 				v_p[i] -= tao * r_p[i];
 				double a_r = std::fabs(r_p[i]);
-				if (a_r > local_max_r) local_max_r = a_r;
+				if (a_r > l_max_r) {
+					l_max_r = a_r;
+				}
 			}
 
-#pragma omp master
+			// Обновляем состояние цикла (только один поток)
+#pragma omp single
 			{
-				current_error = local_max_r;
+				current_error = l_max_r;
 				current_iter++;
-			}
-#pragma omp barrier 
+
+				// Промежуточный вывод каждые 5000 итераций
+				if (current_iter % 5000 == 0) {
+					std::cout << "Iter: " <<  current_iter
+						<< " | Max Residual: " << std::scientific <<  current_error << std::endl;
+				}
+			} // Неявный барьер гарантирует синхронизацию перед проверкой условия while
 		}
 	}
 
+	// Сохраняем финальные результаты в объект
 	solver.last_iterations = current_iter;
 	solver.final_eps = current_error;
-	std::cout << "FINISH: " << current_iter << " iterations. Error: " << current_error << std::endl;
+
+	std::cout << "--------------------------------------------------" << std::endl;
+	std::cout << "FINISH: " << current_iter << " iterations." << std::endl;
+	std::cout << "Final Max Residual: " << current_error << std::endl;
+	std::cout << "--------------------------------------------------" << std::endl;
 }
-
-
 void DirihleVPuassone::calculate_f_grid_main()
 {
 	for (int j = 0; j <= m; j++) {

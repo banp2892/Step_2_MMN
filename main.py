@@ -1,32 +1,70 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QLineEdit
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout,
+    QHBoxLayout, QLabel, QPushButton, QLineEdit, QGroupBox
+)
+import subprocess
+
+def start_calculation(exe_name, parameters):
+    subprocess.run([exe_name] + parameters)
 
 
-class MyWindow(QMainWindow):
+
+
+
+
+
+
+
+
+
+
+
+
+class SolverApp(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # 1. Настройка самого окна
-        self.setWindowTitle("Вариант 8. Шаг 2. ММН. Черных Севастьян Владимирович")
-        self.resize(400, 500)
+        self.setWindowTitle("ММН")
+        self.resize(800, 600)
 
-        # 2. Создаем "центральный виджет" — это пустой холст внутри окна
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
+        # создаем главное окно подложки???
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        self.setup_ui(central_widget)
 
-        # 3. Создаем "Layout" (слой) — он отвечает за то, как элементы будут стоять в ряд или в столбик
-        self.layout = QVBoxLayout(self.central_widget)  # V — Vertical (столбик)
 
-        # 4. Добавляем элементы
-        self.add_elements()
-
-    def add_elements(self):
-        # Здесь мы будем создавать кнопки и надписи
+    def setup_ui(self):
+        params_layout = QGridLayout()
+        params_layout.addWidget(QLabel("Число разбиений по x:"), 0, 0)
+        params_layout.addWidget(self.n, 0, 1)
         pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MyWindow()
+    window = SolverApp()
     window.show()
     sys.exit(app.exec())
+
+test_params = ["0", "3", "0", "1", "200", "200", "1e-7", "500000", "1", "1e-7", "500000"]
+test_exe = "Ступень_2_ММН.exe"
+
+# Вызов функции
+start_calculation(test_exe, test_params)

@@ -8,7 +8,7 @@ class MyWindow(QMainWindow):
 
         # 1. Настройка самого окна
         self.setWindowTitle("Вариант 8. Шаг 2. ММН. Черных Севастьян Владимирович")
-        self.resize(400, 300)
+        self.resize(400, 500)
 
         # 2. Создаем "центральный виджет" — это пустой холст внутри окна
         self.central_widget = QWidget()

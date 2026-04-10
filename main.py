@@ -20,7 +20,11 @@ class MyWindow(QtWidgets.QDialog):
 
 
         self.update_info()
+        self.set_text_to_postanovka()
+        self.validator()
 
+
+    def set_text_to_postanovka(self):
         self.label_button_class_of_task.setText("Выбрать решаемую задачу")
         static_text = (
             "Ступень 2. Метод минимальных невязок. Вариант 8. <br>"
@@ -33,11 +37,8 @@ class MyWindow(QtWidgets.QDialog):
             "c = 0.0, &nbsp; d = 1.0"
         )
 
-
         self.label_postanoka_zadachi.setWordWrap(True)
         self.label_postanoka_zadachi.setText(static_text)
-
-
     def update_info(self):
         # Получаем выбранную задачу
         zadacha_type = self.zadacha.currentText().strip()
@@ -64,6 +65,24 @@ class MyWindow(QtWidgets.QDialog):
 
         self.label_zadacha.setWordWrap(True)
         self.label_zadacha.setText(text)
+    def validator(self):
+        from PyQt6.QtGui import QIntValidator, QDoubleValidator
+        from PyQt6.QtCore import QLocale
+
+        # Валидатор для целых положительных чисел (n, m, n_max)
+        int_validator = QIntValidator(2, 1000000, self)
+        self.lineEdit_n.setValidator(int_validator)
+        self.lineEdit_m.setValidator(int_validator)
+        self.lineEdit_n_max_1.setValidator(int_validator)
+
+        # Валидатор для точности (E_max)
+        # Разрешаем ввод в научном формате (1e-17)
+        eps_validator = QDoubleValidator(0.0, 1.0, 18, self)
+        eps_validator.setNotation(QDoubleValidator.Notation.ScientificNotation)
+        # Устанавливаем английскую локаль, чтобы разделителем всегда была точка, а не запятая
+        eps_validator.setLocale(QLocale(QLocale.Language.English, QLocale.Country.UnitedStates))
+
+        self.lineEdit_e_max_1.setValidator(eps_validator)
 
 
 if __name__ == "__main__":

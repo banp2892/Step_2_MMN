@@ -20,6 +20,8 @@ DirihleVPuassone::DirihleVPuassone(double a_t, double b_t, double c_t, double d_
 	Ar.assign(total_nodes, 0.0); // вектор произведение Ar заполняем нулями
 	f_grid.assign(total_nodes, 0.0); // правая часть f_grid заполняем нулями
 	u.assign(total_nodes, 0.0);
+	v2.assign(total_nodes, 0.0);
+	diff_v_and_u.assign(total_nodes, 0.0);
 }
 
 
@@ -223,8 +225,8 @@ std::vector<double> DirihleVPuassone::calculate_vec_diff(const std::vector<doubl
 	const int row_step = n + 1;
 
 
-	for (int j = 0; j < m; j++) {
-		for (int i = 0; i < n; i++) {
+	for (int j = 0; j <= m; j++) {
+		for (int i = 0; i <= n; i++) {
 			int idx = row_step * j + i;
 			result[idx] = v1[idx] - v2[idx];
 		}

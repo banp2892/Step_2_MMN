@@ -325,6 +325,13 @@
       </property>
      </spacer>
     </item>
+    <item row="9" column="0">
+     <widget class="QLabel" name="label_console">
+      <property name="text">
+       <string>Вычисление:</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QGroupBox" name="parametr_box_3">

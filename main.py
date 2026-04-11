@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
 from PyQt6 import QtWidgets, uic
 import subprocess
 
-def start_calculation(exe_name, parameters):
+def start_exe(exe_name, parameters):
     subprocess.run([exe_name] + parameters)
 
 
@@ -15,14 +15,42 @@ class MyWindow(QtWidgets.QDialog):
         super(MyWindow, self).__init__()
         uic.loadUi('design.ui', self)
 
+        self.read_parametrs()
+
 
         self.zadacha.currentIndexChanged.connect(self.update_info)
-
+        self.pushButto_start_calculate.clicked.connect(self.start_calculation)
 
         self.update_info()
         self.set_text_to_postanovka()
         self.validator()
         self.label_spravka_fill()
+
+    def start_calculation(self):
+        self.read_parametrs()
+
+        zadacha_type = self.zadacha.currentText().strip()
+        base_bounds = ["0.0", "3.0", "0.0", "1.0"]
+
+        if zadacha_type == 'Тестовая':
+            params = base_bounds + [
+                self.n, self.m, self.e_max_1, self.n_max_1, "0"
+            ]
+        else:
+            params = base_bounds + [
+                self.n, self.m, self.e_max_1, self.n_max_1, "1",
+                self.e_max_2, self.n_max_2
+            ]
+        start_exe("Ступень_2_ММН.exe", params)
+
+    def read_parametrs(self):
+        self.n = self.lineEdit_n.text()
+        self.m = self.lineEdit_m.text()
+        self.e_max_1 = self.lineEdit_e_max_1.text()
+        self.n_max_1 = self.lineEdit_n_max_1.text()
+
+        self.e_max_2 = self.lineEdit_e_max_2.text()
+        self.n_max_2 = self.lineEdit_n_max_2.text()
 
     def set_text_to_postanovka(self):
         self.label_button_class_of_task.setText("Выбрать решаемую задачу")
@@ -83,9 +111,34 @@ class MyWindow(QtWidgets.QDialog):
         eps_validator.setLocale(QLocale(QLocale.Language.English, QLocale.Country.UnitedStates))
 
         self.lineEdit_e_max_1.setValidator(eps_validator)
+
     def label_spravka_fill(self):
-        self.label_spravka.setText("«Для решения тестовой задачи использованы сетка с числом разбиений по x n = «__» и числом разбиений по y m = «__», метод ____________________________________________________________, параметры _______________________________________ (указать значения) критерии остановки по точности εмет = «__» и по числу итераций Nmax =«__» На решение схемы (СЛАУ) затрачено итераций N =«__» и достигнута точ- ность итерационного метода ε(N) = «__» Схема (СЛАУ) решена с невязкой || R(N)|| = «___» (указать норму невязки) для невязки СЛАУ использована норма «_________________»; (указать тип: евклидова норма, норма «max») Тестовая задача должна быть решена с погрешностью не более ε = 0.5 ⋅10 –6; задача решена с погрешностью ε1 =«___» Максимальное отклонение точного и численного решений наблюдается в уз- ле x=«___»; y=«___» В качестве начального приближения использовано «____________________» (указать, что использовано: интерполяция по x, интерполяция по y, иное)». Невязка СЛАУ на начальном приближении || R(0) || = «___» (указать норму невязки и тип нормы)")
+        # Данные для вставки (замени на реальные переменные из твоего расчета)
+        zadacha_type = self.zadacha.currentText().strip()
+        if zadacha_type=="Тестовая":
+
+
+            text = (
+                "<b>СПРАВКА ПО РЕШЕНИЮ ТЕСТОВОЙ ЗАДАЧИ</b><br>"
+                "------------------------------------------------------------------<br>"
+                f"<b>Параметры сетки:</b> n = {self.n}, m = {self.m}<br>"
+                "<b>Метод:</b> Минимальных невязок (ММН)<br>"
+                f"<b>Критерии остановки:</b> ε<sub>мет</sub> = {self.e_max_1}, N<sub>max</sub> = {self.n_max_1}<br>"
+                "------------------------------------------------------------------<br>"
+                f"На решение СЛАУ затрачено итераций: <b>N = {n_fact}</b><br>"
+                f"Достигнутая точность метода: <b>ε(N) = {eps_fact}</b><br>"
+                f"Невязка СЛАУ: <b>||R<sup>(N)</sup>||<sub>max</sub> = {residual}</b> (норма 'max')<br>"
+                "------------------------------------------------------------------<br>"
+                f"Контрольная погрешность: ε ≤ {err_test}<br>"
+                f"Фактическая погрешность: <b>ε<sub>1</sub> = {err_fact}</b><br>"
+                f"Макс. отклонение в узле: <b>(x = {x_max}; y = {y_max})</b><br>"
+                "------------------------------------------------------------------<br>"
+                "<b>Начальное приближение:</b> Нулевое (или интерполяция)<br>"
+                f"Начальная невязка: <b>||R<sup>(0)</sup>||<sub>max</sub> = {r_0}</b>"
+            )
+
         self.label_spravka.setWordWrap(True)
+        self.label_spravka.setText(text)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

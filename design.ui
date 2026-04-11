@@ -51,7 +51,7 @@
        </font>
       </property>
       <property name="text">
-       <string>TextLabel</string>
+       <string>Вариант и постановка задачи</string>
       </property>
      </widget>
     </item>
@@ -94,7 +94,7 @@
        </font>
       </property>
       <property name="text">
-       <string>TextLabel</string>
+       <string>Функции соответствующие выбранной задаче</string>
       </property>
      </widget>
     </item>
@@ -109,7 +109,7 @@
        </font>
       </property>
       <property name="text">
-       <string>TextLabel</string>
+       <string>Выбор задачи</string>
       </property>
      </widget>
     </item>
@@ -185,7 +185,7 @@
      </widget>
     </item>
     <item row="9" column="1">
-     <widget class="QPushButton" name="pushButton">
+     <widget class="QPushButton" name="pushButto_start_calculate">
       <property name="maximumSize">
        <size>
         <width>100</width>
@@ -193,7 +193,7 @@
        </size>
       </property>
       <property name="text">
-       <string>PushButton</string>
+       <string>Вычислить</string>
       </property>
      </widget>
     </item>

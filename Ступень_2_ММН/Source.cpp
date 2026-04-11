@@ -109,8 +109,8 @@ int main(int argc, char* argv[]) {
         std::vector<double> diff = solver1.calculate_vec_diff(solver1.v, v2_subsampled);
         save_to_binary("v_main_diff.bin", diff);
 
-        std::cout << "Время 1 (n x m): " << time1 << " сек." << std::endl;
-        std::cout << "Время 2 (2n x 2m): " << time2 << " сек." << std::endl;
+        
+        std::cout << "Время 1 (n x m): " << time1 << " сек. " << "Время 2 (2n x 2m): " << time2 << " сек." << std::endl;
     }
 
     std::ofstream stats("stats.txt", std::ios::app);

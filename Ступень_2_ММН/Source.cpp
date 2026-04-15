@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
 
         total_n = solver1.last_iterations;
         total_e = solver1.final_eps;
-        r_n = solver1.final_eps;
+        r_n = solver1.r_n;
 
         solver1.calculate_delta_u();
         std::vector<double> diff_utest = solver1.calculate_vec_diff(solver1.u, solver1.v);
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
 
         total_n_2 = solver2.last_iterations;
         total_e_2 = solver2.final_eps;
-        r_n_2 = solver2.final_eps;
+        r_n_2 = solver2.r_n;
 
         E_error = solver1.compare_with_half_step(solver2, x_max, y_max);
 

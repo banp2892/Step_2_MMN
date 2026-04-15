@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
 
         total_n = solver1.last_iterations;
         total_e = solver1.final_eps;
-        r_n = solver1.final_eps;
+        r_n = solver1.r_n;
 
 
         DirihleVPuassone solver2(a, b, c, d, n * 2, m * 2);

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1155</width>
-    <height>810</height>
+    <height>881</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -137,7 +137,7 @@
      <x>20</x>
      <y>390</y>
      <width>551</width>
-     <height>371</height>
+     <height>271</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -376,10 +376,10 @@
   <widget class="QGroupBox" name="parametr_box_4">
    <property name="geometry">
     <rect>
-     <x>580</x>
-     <y>690</y>
-     <width>551</width>
-     <height>181</height>
+     <x>20</x>
+     <y>660</y>
+     <width>1111</width>
+     <height>111</height>
     </rect>
    </property>
    <property name="font">
@@ -391,7 +391,7 @@
     </font>
    </property>
    <property name="title">
-    <string>Справка</string>
+    <string>Таблицы</string>
    </property>
    <property name="flat">
     <bool>false</bool>
@@ -400,81 +400,110 @@
     <bool>false</bool>
    </property>
    <layout class="QGridLayout" name="gridLayout_4">
-    <item row="0" column="2">
-     <widget class="QPushButton" name="pushButto_start_calculate_4">
-      <property name="maximumSize">
-       <size>
-        <width>100</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="text">
-       <string>Вычислить</string>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="1">
-     <widget class="QPushButton" name="pushButto_start_calculate_3">
+     <widget class="QPushButton" name="pushButto_table_u_or_v2">
       <property name="maximumSize">
        <size>
-        <width>100</width>
+        <width>250</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="text">
-       <string>Вычислить</string>
+       <string>Таблица u(N)(xi,yj)</string>
       </property>
      </widget>
     </item>
     <item row="0" column="0">
-     <widget class="QPushButton" name="pushButto_start_calculate_2">
+     <widget class="QPushButton" name="pushButto_table_v">
       <property name="maximumSize">
        <size>
-        <width>100</width>
+        <width>250</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="text">
-       <string>Вычислить</string>
+       <string>Таблица v(N)(xi,yj)</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="0">
-     <widget class="QPushButton" name="pushButto_start_calculate_5">
+    <item row="0" column="2">
+     <widget class="QPushButton" name="pushButto_table_raznost">
       <property name="maximumSize">
        <size>
-        <width>100</width>
+        <width>250</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="text">
-       <string>Вычислить</string>
+       <string>Таблица v(N)(xi,yj) - u(n)(xi,yj)</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="1">
-     <widget class="QPushButton" name="pushButto_start_calculate_6">
+   </layout>
+  </widget>
+  <widget class="QGroupBox" name="parametr_box_5">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>770</y>
+     <width>1111</width>
+     <height>111</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Calibri</family>
+     <pointsize>12</pointsize>
+     <bold>false</bold>
+     <stylestrategy>PreferAntialias</stylestrategy>
+    </font>
+   </property>
+   <property name="title">
+    <string>Графики</string>
+   </property>
+   <property name="flat">
+    <bool>false</bool>
+   </property>
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <layout class="QGridLayout" name="gridLayout_5">
+    <item row="0" column="1">
+     <widget class="QPushButton" name="pushButto_table_v_4">
       <property name="maximumSize">
        <size>
-        <width>100</width>
+        <width>150</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="text">
-       <string>Вычислить</string>
+       <string>Таблица v(N)(xi,yj)</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="2">
-     <widget class="QPushButton" name="pushButto_start_calculate_7">
+    <item row="0" column="0">
+     <widget class="QPushButton" name="pushButto_table_v_5">
       <property name="maximumSize">
        <size>
-        <width>100</width>
+        <width>150</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="text">
-       <string>Вычислить</string>
+       <string>Таблица v(N)(xi,yj)</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2">
+     <widget class="QPushButton" name="pushButto_table_v_6">
+      <property name="maximumSize">
+       <size>
+        <width>150</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Таблица v(N)(xi,yj)</string>
       </property>
      </widget>
     </item>

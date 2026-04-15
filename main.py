@@ -22,11 +22,17 @@ class MyWindow(QtWidgets.QDialog):
 
         self.zadacha.currentIndexChanged.connect(self.update_info)
         self.pushButto_start_calculate.clicked.connect(self.start_calculation)
+        self.pushButto_table_v.clicked.connect(self.view_v_table)
 
         self.update_info()
         self.set_text_to_postanovka()
         self.validator()
         self.label_spravka_fill()
+
+
+    def view_v_table(self):
+        pass
+
 
     def start_calculation(self):
         try:
@@ -69,6 +75,16 @@ class MyWindow(QtWidgets.QDialog):
             print(f"Ошибка при инициализации потока: {e}")
             self.pushButto_start_calculate.setEnabled(True)
 
+    def rename_button_table(self):
+        zadacha_type = self.zadacha.currentText().strip()
+        if zadacha_type=="Тестовая":
+            self.pushButto_table_v.setText("Таблица v(N)(xi,yj)")
+            self.pushButto_table_u_or_v2.setText("Таблица u(N)(xi,yj)")
+            self.pushButto_table_raznost.setText("Таблица v(N)(xi,yj) - u(N)(xi,yj)")
+        else:
+            self.pushButto_table_v.setText("Таблица v(N)(xi,yj)")
+            self.pushButto_table_u_or_v2.setText("Таблица v2(N2)(x2i,y2j)")
+            self.pushButto_table_raznost.setText("Таблица v(N)(xi,yj) - v(2N)(x2i,y2j)")
 
     def read_parametrs(self):
         self.n = self.lineEdit_n.text()
@@ -168,6 +184,8 @@ class MyWindow(QtWidgets.QDialog):
 
         self.label_zadacha.setWordWrap(True)
         self.label_zadacha.setText(text)
+        self.rename_button_table()
+
     def validator(self):
         from PyQt6.QtGui import QIntValidator, QDoubleValidator
         from PyQt6.QtCore import QLocale
@@ -234,11 +252,10 @@ class MyWindow(QtWidgets.QDialog):
                 t1 = t2 = total_time = 0.0
 
             text = (
+                f"Метод: <b>Минимальных невязок (ММН)</b>. <br>"
                 "<b>СПРАВКА ПО РЕШЕНИЮ ОСНОВНОЙ ЗАДАЧИ (ОСНОВНАЯ СЕТКА)</b><br>"
                 "------------------------------------------------------------------<br>"
                 f"Использована сетка с числом разбиений: <b>n = {self.res_n}</b>, <b>m = {self.res_m}</b>. <br>"
-                f"Метод: <b>Минимальных невязок (ММН)</b>. <br>"
-                f"Параметры: <b>итерационный параметр τ выбирается из условия минимума невязки</b>. <br>"
                 f"Критерии остановки: <b>ε<sub>мет</sub> = {self.e_max_1}</b>, <b>N<sub>max</sub> = {self.n_max_1}</b>. <br>"
                 f"Затрачено итераций: <b>N = {self.res_iter}</b>. <br>"
                 f"Достигнута точность итерационного метода: <b>ε(N) = {self.res_eps_n}</b>. <br>"
@@ -249,7 +266,8 @@ class MyWindow(QtWidgets.QDialog):
                 "------------------------------------------------------------------<br>"
                 "<b>СПРАВКА ПО РЕШЕНИЮ (СЕТКА С ПОЛОВИННЫМ ШАГОМ)</b><br>"
                 "------------------------------------------------------------------<br>"
-                f"Использована сетка: <b>{int(self.res_n) * 2}x{int(self.res_m) * 2}</b>. <br>"
+                
+                f"Использована сетка с числом разбиений: <b>n = {int(self.res_n) * 2}</b>, <b>m = {int(self.res_m) * 2}</b>. <br>"
                 f"Критерии остановки: <b>ε<sub>мет-2</sub> = {self.e_max_2}</b>, <b>N<sub>max-2</sub> = {self.n_max_2}</b>. <br>"
                 f"Затрачено итераций: <b>N2 = {self.res_iter_2}</b>. <br>"
                 f"Достигнута точность итерационного метода: <b>ε(N2) = {self.res_eps_n_2}</b>. <br>"
@@ -261,7 +279,7 @@ class MyWindow(QtWidgets.QDialog):
                 "<b>ИТОГОВЫЙ КОНТРОЛЬ ТОЧНОСТИ</b><br>"
                 "------------------------------------------------------------------<br>"
                 f"Требуемая точность: <b>ε = 0.5·10⁻⁶</b>. <br>"
-                f"Фактическая точность (по Рунге): <b>ε2 = {self.res_error}</b>. <br>"
+                f"Полученная точность (разность численных решений в общих узлах): <b>ε2 = {self.res_error}</b>. <br>"
                 f"Макс. отклонение в узле: <b>x = {self.res_x_max}</b>; <b>y = {self.res_y_max}</b>. <br>"
                 f"<b>Общее время расчетов: {total_time:.4f} сек.</b>"
             )
@@ -306,6 +324,15 @@ class Worker(QObject):
             self.text_for_console.emit(f"Ошибка запуска: {e}")
         finally:
             self.finished.emit()
+
+
+class TableView(QWidget):
+    def __init__(self, data, n,m,title,parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setMinimumSize(800, 600)
+
+
 
 
 

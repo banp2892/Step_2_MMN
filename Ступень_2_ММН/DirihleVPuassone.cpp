@@ -262,90 +262,89 @@ std::vector<double> DirihleVPuassone::get_subsampled_v2(const std::vector<double
 
 
 void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limit, int n_max) {
-	// 1. Инициализация управляющих переменных
-	double current_error = 1e10;
+	double current_residual = 1e10; // Невязка ||R||
+	double current_delta_v = 1e10;  // Приращение ||v_new - v_old||
 	int current_iter = 0;
 	const int total = (solver.n + 1) * (solver.m + 1);
 
-	// 2. Объявляем переменные здесь, чтобы они были SHARED для параллельной секции.
-	// Это необходимо для корректной работы директивы reduction.
 	double g_ar_r = 0, g_ar_ar = 0;
 	double l_ar_r = 0, l_ar_ar = 0;
 	double l_max_r = 0;
+	double l_max_delta = 0;
 
-	// Начало параллельной области
-#pragma omp parallel shared(current_error, current_iter, g_ar_r, g_ar_ar, l_ar_r, l_ar_ar, l_max_r)
+#pragma omp parallel shared(current_residual, current_delta_v, current_iter) firstprivate(eps_limit, n_max)
 	{
-		while (current_error > eps_limit && current_iter < n_max) {
+		// ВАЖНО: Условие проверяется всеми, но обновляется внутри barrier
+		while (current_delta_v > eps_limit && current_iter < n_max) {
 
-			// Вычисляем невязку r и результат оператора Ar
-			// Внутри этих функций должны быть только #pragma omp for (без parallel)
 			solver.calculate_r();
 			solver.calculate_Ar();
 
-			// Сброс локальных сумм перед редукцией
 #pragma omp single
 			{
 				l_ar_r = 0.0;
 				l_ar_ar = 0.0;
-			} // Здесь неявный барьер
+			}
 
 			const double* ar_p = solver.Ar.data();
 			const double* r_p = solver.r.data();
 
-			// 3. Вычисляем скалярные произведения (Ar, r) и (Ar, Ar)
 #pragma omp for reduction(+:l_ar_r, l_ar_ar)
 			for (int i = 0; i < total; i++) {
 				l_ar_r += ar_p[i] * r_p[i];
 				l_ar_ar += ar_p[i] * ar_p[i];
 			}
 
-			// Вычисляем итерационный параметр tau
-#pragma omp single
-			{
-				g_ar_r = l_ar_r;
-				g_ar_ar = l_ar_ar;
-				l_max_r = 0.0; // Сброс для поиска максимума на текущем шаге
-			} // Здесь неявный барьер
-
-			// Добавляем малую добавку 1e-25, чтобы избежать NaN при делении на ноль
-			double tao = g_ar_r / (g_ar_ar + 1e-25);
+			// Вычисляем шаг tau
+			double tau_local = l_ar_r / (l_ar_ar + 1e-25);
 			double* v_p = solver.v.data();
 
-			// 4. Обновляем решение v = v - tau * r и ищем максимальную невязку
-#pragma omp for reduction(max:l_max_r)
-			for (int i = 0; i < total; i++) {
-				v_p[i] -= tao * r_p[i];
-				double a_r = std::fabs(r_p[i]);
-				if (a_r > l_max_r) {
-					l_max_r = a_r;
-				}
-			}
-
-			// Обновляем состояние цикла (только один поток)
 #pragma omp single
 			{
-				current_error = l_max_r;
+				l_max_r = 0.0;
+				l_max_delta = 0.0;
+			}
+
+			// Обновляем решение И считаем сразу две нормы
+#pragma omp for reduction(max:l_max_r, l_max_delta)
+			for (int i = 0; i < total; i++) {
+				double delta = tau_local * r_p[i]; // На сколько изменилось решение
+				v_p[i] -= delta;
+
+				double abs_r = std::fabs(r_p[i]);
+				double abs_d = std::fabs(delta);
+
+				if (abs_r > l_max_r) l_max_r = abs_r;
+				if (abs_d > l_max_delta) l_max_delta = abs_d;
+			}
+
+#pragma omp single
+			{
+				current_residual = l_max_r;
+				current_delta_v = l_max_delta;
 				current_iter++;
 
-				// Промежуточный вывод каждые 5000 итераций
 				if (current_iter % 5000 == 0) {
-					std::cout << "Iter: " <<  current_iter
-						<< " | Max Residual: " << std::scientific <<  current_error << std::endl;
+					std::cout << "Iter: " << current_iter
+						<< " | Max Delta: " << std::scientific << current_delta_v << std::endl;
 				}
-			} // Неявный барьер гарантирует синхронизацию перед проверкой условия while
+			}
+			
 		}
 	}
 
-	// Сохраняем финальные результаты в объект
 	solver.last_iterations = current_iter;
-	solver.final_eps = current_error;
+	solver.r_n = current_residual; // Сохраняем невязку
+	solver.final_eps = current_delta_v; // Сохраняем ПРИРАЩЕНИЕ (точность метода)
 
 	std::cout << "--------------------------------------------------" << std::endl;
 	std::cout << "FINISH: " << current_iter << " iterations." << std::endl;
-	std::cout << "Final Max Residual: " << current_error << std::endl;
+	std::cout << "Final r_n: " << current_residual << std::endl;
+	std::cout << "Final eps: " << current_delta_v << std::endl;
 	std::cout << "--------------------------------------------------" << std::endl;
 }
+
+
 void DirihleVPuassone::calculate_f_grid_main()
 {
 	for (int j = 0; j <= m; j++) {

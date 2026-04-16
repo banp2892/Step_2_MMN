@@ -161,6 +161,10 @@ class MyWindow(QtWidgets.QDialog):
                 last_line = lines[-1].strip()
                 data = last_line.split()
 
+                self.pushButto_table_v.setEnabled(True)
+                self.pushButto_table_u_or_v2.setEnabled(True)
+                self.pushButto_table_raznost.setEnabled(True)
+
                 # --- Общие параметры (0-6) ---
                 self.res_task_type = int(data[0])
                 self.res_n = data[1]
@@ -241,6 +245,10 @@ class MyWindow(QtWidgets.QDialog):
         self.label_zadacha.setWordWrap(True)
         self.label_zadacha.setText(text)
         self.rename_button_table()
+        self.pushButto_table_v.setEnabled(False)
+        self.pushButto_table_u_or_v2.setEnabled(False)
+        self.pushButto_table_raznost.setEnabled(False)
+
 
 
 
@@ -254,11 +262,10 @@ class MyWindow(QtWidgets.QDialog):
         self.lineEdit_m.setValidator(int_validator)
         self.lineEdit_n_max_1.setValidator(int_validator)
 
-        # Валидатор для точности (E_max)
-        # Разрешаем ввод в научном формате (1e-17)
+
         eps_validator = QDoubleValidator(0.0, 1.0, 18, self)
         eps_validator.setNotation(QDoubleValidator.Notation.ScientificNotation)
-        # Устанавливаем английскую локаль, чтобы разделителем всегда была точка, а не запятая
+
         eps_validator.setLocale(QLocale(QLocale.Language.English, QLocale.Country.UnitedStates))
 
         self.lineEdit_e_max_1.setValidator(eps_validator)
@@ -391,6 +398,9 @@ class TableView(QWidget):
         self.setMinimumSize(800, 600)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)  # Убираем рамки вокруг таблицы
+        layout.setSpacing(0)
+
 
         rows = m+1
         cols = n + 1
@@ -399,13 +409,17 @@ class TableView(QWidget):
         step_y = (0 + 1)/(m)
 
         self.table = QTableWidget(rows + 1, cols + 1)
+
+
+
+        layout.addWidget(self.table)
         for i in range(n+1):
             x_val = 0.0 + step_x * i
-            self.table.setItem(0,i+2,QTableWidgetItem(f"{x_val:.3f}"))
+            self.table.setItem(0,i+1,QTableWidgetItem(f"{x_val:.3f}"))
 
         for j in range(m,-1,-1):
             y_val = 1.0 - step_y * (m-j)
-            self.table.setItem(m-j+2,0,QTableWidgetItem(f"{y_val:.3f}"))
+            self.table.setItem(m-j+1,0,QTableWidgetItem(f"{y_val:.3f}"))
 
 
 
@@ -414,12 +428,12 @@ class TableView(QWidget):
         # Углы управления
 
 
-        self.table.setItem(0, 1, QTableWidgetItem("xi"))
-        self.table.setItem(1, 0, QTableWidgetItem("yj"))
+        #self.table.setItem(0, 1, QTableWidgetItem("xi"))
+        self.table.setItem(0, 0, QTableWidgetItem("yj                   xi"))
 
-        h_labels = ["", ""] + [f"i={i}" for i in range(n + 1)]
+        h_labels = [""] + [f"i={i}" for i in range(n + 1)]
         self.table.setHorizontalHeaderLabels(h_labels)
-        h2_labels = ["", ""] + [f"i={j}" for j in range(m ,-1,-1)]
+        h2_labels = [""] + [f"i={j}" for j in range(m ,-1,-1)]
         self.table.setVerticalHeaderLabels(h2_labels)
 
 
@@ -431,7 +445,10 @@ class TableView(QWidget):
 
                 # Берем значение из считанного файла
                 value = data[idx_in_vector]
-                item = QTableWidgetItem(f"{value:.6g}")
+                if abs(value)<1e-17:
+                    item = QTableWidgetItem(f"{0:.6g}")
+                else:
+                    item = QTableWidgetItem(f"{value:.6g}")
 
                 # Куда кладем в таблицу?
                 self.table.setItem(row_in_table + 1, i_idx + 1, item)

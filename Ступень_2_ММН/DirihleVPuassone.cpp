@@ -263,25 +263,26 @@ std::vector<double> DirihleVPuassone::get_subsampled_v2(const std::vector<double
 
 std::vector<double> DirihleVPuassone::reshape_to_half_nodes(const std::vector<double>& vector, int n, int m)
 {
-
-	std::vector<double> result(n * m);
+	std::vector<double> result((n + 1) * (m + 1));
 
 	int oldW = 2 * m + 1;
-	std::cout << "Vector size = " << vector.size() << std::endl;
-	for (int i = 0; i < n; i++) {
-		for (int j = 0; j < m; j++) {
-			size_t old_idx = static_cast<size_t>(2 * i + 1) * oldW + (2 * j + 1);
-			if (old_idx < vector.size() && (i * m + j) < result.size()) {
-				result[i * m + j] = vector[old_idx];
+	std::cout << "Vector size = " << vector.size() << " target n, m: " << n << " " << m << std::endl;
+
+	for (int i = 0; i <= n; i++) {
+		for (int j = 0; j <= m; j++) {
+			size_t old_idx = static_cast<size_t>(2 * i) * oldW + (2 * j);
+			size_t new_idx = static_cast<size_t>(i) * (m + 1) + j;
+
+			if (old_idx < vector.size() && new_idx < result.size()) {
+				result[new_idx] = vector[old_idx];
 			}
 			else {
-				std::cout << "ÎØÈÁÊÀ Â ÐÀÇÌÅÐÅ???" << std::endl;
+				std::cerr << "Out of bounds at i=" << i << " j=" << j << std::endl;
 			}
 		}
 	}
 	return result;
 }
-
 void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limit, int n_max) {
 	double current_residual = 1e10; // Íåâÿçêà ||R||
 	double current_delta_v = 1e10;  // Ïðèðàùåíèå ||v_new - v_old||

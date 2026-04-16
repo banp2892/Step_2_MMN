@@ -85,6 +85,9 @@ public:
 
 	std::vector<double> get_subsampled_v2(const std::vector<double>& v_high, int n_low, int m_low);
 
+
+	std::vector<double> reshape_to_half_nodes(const std::vector<double>& vector, int n, int m);
+
 	static void solver_iterator(DirihleVPuassone &solver, double Err, int N_max);
 };
 

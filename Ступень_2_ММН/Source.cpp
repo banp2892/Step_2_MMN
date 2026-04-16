@@ -52,6 +52,8 @@ int main(int argc, char* argv[]) {
         solver1.calculate_r();
         r_0_initial = solver1.get_chebyshov_norma_for_vector(solver1.r);
 
+        save_to_binary("v0_test_numeric.bin", solver1.v);
+
         auto start = std::chrono::high_resolution_clock::now();
         DirihleVPuassone::solver_iterator(solver1, e_max, n_max);
         auto end = std::chrono::high_resolution_clock::now();
@@ -77,6 +79,8 @@ int main(int argc, char* argv[]) {
         solver1.calculate_r();
         r_0_initial = solver1.get_chebyshov_norma_for_vector(solver1.r);
 
+        save_to_binary("v1_0_main_numeric.bin", solver1.v);
+
         auto start1 = std::chrono::high_resolution_clock::now();
         DirihleVPuassone::solver_iterator(solver1, e_max, n_max);
         auto end1 = std::chrono::high_resolution_clock::now();
@@ -91,6 +95,10 @@ int main(int argc, char* argv[]) {
         solver2.prepare_v_and_i_main();
         solver2.calculate_r();
         r_0_2 = solver2.get_chebyshov_norma_for_vector(solver2.r);
+
+        std::vector<double> temp_vector_v2 = solver2.reshape_to_half_nodes(solver2.v, n, m);
+
+        save_to_binary("v2_0_main_numeric.bin", temp_vector_v2);
 
         auto start2 = std::chrono::high_resolution_clock::now();
         DirihleVPuassone::solver_iterator(solver2, e_max_2, n_max_2);

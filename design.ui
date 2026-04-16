@@ -468,42 +468,68 @@
     <bool>false</bool>
    </property>
    <layout class="QGridLayout" name="gridLayout_5">
-    <item row="0" column="1">
-     <widget class="QPushButton" name="pushButto_table_v_4">
+    <item row="0" column="2">
+     <widget class="QPushButton" name="pushButto_graphic_raznost">
       <property name="maximumSize">
        <size>
-        <width>150</width>
+        <width>250</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="text">
-       <string>Таблица v(N)(xi,yj)</string>
+       <string>График v(N)(xi,yj) - u(N)(xi,yj)</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QPushButton" name="pushButto_graphic_u_or_v2">
+      <property name="maximumSize">
+       <size>
+        <width>250</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>График u(N)(xi,yj)</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="3">
+     <widget class="QPushButton" name="pushButto_graphic_v_0">
+      <property name="maximumSize">
+       <size>
+        <width>250</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>График v(0)(xi,yj)</string>
       </property>
      </widget>
     </item>
     <item row="0" column="0">
-     <widget class="QPushButton" name="pushButto_table_v_5">
+     <widget class="QPushButton" name="pushButto_graphic_v">
       <property name="maximumSize">
        <size>
-        <width>150</width>
+        <width>250</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="text">
-       <string>Таблица v(N)(xi,yj)</string>
+       <string>График v(N)(xi,yj)</string>
       </property>
      </widget>
     </item>
-    <item row="0" column="2">
-     <widget class="QPushButton" name="pushButto_table_v_6">
+    <item row="0" column="4">
+     <widget class="QPushButton" name="pushButto_graphic_v2_0">
       <property name="maximumSize">
        <size>
-        <width>150</width>
+        <width>250</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="text">
-       <string>Таблица v(N)(xi,yj)</string>
+       <string>График v2(0)(xi,yj)</string>
       </property>
      </widget>
     </item>

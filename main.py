@@ -1,5 +1,7 @@
 import sys
 
+import pyvista as pv
+from pyvistaqt import QtInteractor
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
@@ -29,6 +31,11 @@ class MyWindow(QtWidgets.QDialog):
         self.pushButto_table_u_or_v2.clicked.connect(self.view_v2_table)
         self.pushButto_table_raznost.clicked.connect(self.view_diff_table)
 
+        self.pushButto_graphic_v.clicked.connect(lambda: self.show_graphic('v'))
+        self.pushButto_graphic_u_or_v2.clicked.connect(lambda: self.show_graphic('u_v2'))
+        self.pushButto_graphic_raznost.clicked.connect(lambda: self.show_graphic('diff'))
+        self.pushButto_graphic_v_0.clicked.connect(lambda: self.show_graphic('v_0'))
+        self.pushButto_graphic_v2_0.clicked.connect(lambda: self.show_graphic('v2_0'))
 
 
         self.update_info()
@@ -95,7 +102,7 @@ class MyWindow(QtWidgets.QDialog):
             print("--- Запуск процесса ---")
             self.read_parametrs()
 
-            # Блокируем кнопку, чтобы не нажать дважды
+
             self.pushButto_start_calculate.setEnabled(False)
 
             zadacha_type = self.zadacha.currentText().strip()
@@ -113,16 +120,16 @@ class MyWindow(QtWidgets.QDialog):
             self.worker = Worker(cmd)
             self.worker.moveToThread(self.thread)
 
-            # Сигналы
+
             self.thread.started.connect(self.worker.run)
             self.worker.text_for_console.connect(self.update_console_label)
 
-            # Важно: Сначала включаем кнопку обратно, потом закрываем поток
             self.worker.finished.connect(lambda: self.pushButto_start_calculate.setEnabled(True))
             self.worker.finished.connect(self.thread.quit)
             self.worker.finished.connect(self.worker.deleteLater)
             self.thread.finished.connect(self.thread.deleteLater)
             self.thread.finished.connect(self.read_results)
+
 
             print("Поток подготовлен, запускаю...")
             self.thread.start()
@@ -141,6 +148,17 @@ class MyWindow(QtWidgets.QDialog):
             self.pushButto_table_v.setText("Таблица v(N)(xi,yj)")
             self.pushButto_table_u_or_v2.setText("Таблица v2(N2)(x2i,y2j)")
             self.pushButto_table_raznost.setText("Таблица v(N)(xi,yj) - v(2N)(x2i,y2j)")
+
+    def rename_button_graphic(self):
+        zadacha_type = self.zadacha.currentText().strip()
+        if zadacha_type=="Тестовая":
+            self.pushButto_graphic_v.setText("График v(N)(xi,yj)")
+            self.pushButto_graphic_u_or_v2.setText("График u(N)(xi,yj)")
+            self.pushButto_graphic_raznost.setText("График v(N)(xi,yj) - u(N)(xi,yj)")
+        else:
+            self.pushButto_graphic_v.setText("График v(N)(xi,yj)")
+            self.pushButto_graphic_u_or_v2.setText("График v2(N2)(x2i,y2j)")
+            self.pushButto_graphic_raznost.setText("График v(N)(xi,yj) - v(2N)(x2i,y2j)")
 
     def read_parametrs(self):
         self.n = self.lineEdit_n.text()
@@ -164,6 +182,13 @@ class MyWindow(QtWidgets.QDialog):
                 self.pushButto_table_v.setEnabled(True)
                 self.pushButto_table_u_or_v2.setEnabled(True)
                 self.pushButto_table_raznost.setEnabled(True)
+
+                self.pushButto_graphic_raznost.setEnabled(True)
+                self.pushButto_graphic_u_or_v2.setEnabled(True)
+                self.pushButto_graphic_v.setEnabled(True)
+                self.pushButto_graphic_v_0.setEnabled(True)
+
+
 
                 # --- Общие параметры (0-6) ---
                 self.res_task_type = int(data[0])
@@ -193,6 +218,9 @@ class MyWindow(QtWidgets.QDialog):
                     self.res_time_2 = data[15]
 
             # Обновляем справку
+            is_main_task = (self.res_task_type != 0)
+            self.pushButto_graphic_v2_0.setEnabled(is_main_task)
+
             self.label_spravka_fill()
 
         except FileNotFoundError:
@@ -245,12 +273,50 @@ class MyWindow(QtWidgets.QDialog):
         self.label_zadacha.setWordWrap(True)
         self.label_zadacha.setText(text)
         self.rename_button_table()
+        self.rename_button_graphic()
+
         self.pushButto_table_v.setEnabled(False)
         self.pushButto_table_u_or_v2.setEnabled(False)
         self.pushButto_table_raznost.setEnabled(False)
+        self.pushButto_graphic_raznost.setEnabled(False)
+        self.pushButto_graphic_u_or_v2.setEnabled(False)
+        self.pushButto_graphic_v.setEnabled(False)
+        self.pushButto_graphic_v2_0.setEnabled(False)
+        self.pushButto_graphic_v_0.setEnabled(False)
 
 
+    def show_graphic(self, mode):
+        n, m = int(self.n), int(self.m)
+        zadacha_type = self.zadacha.currentText().strip()
+        is_test = (zadacha_type == 'Тестовая')
 
+        # Логика выбора файла в зависимости от нажатой кнопки (mode)
+        if mode == 'v':
+            filename = 'v_test_numeric.bin' if is_test else 'v_main_n.bin'
+            title = "График v(N)"
+        elif mode == 'u_v2':
+            filename = 'u_test_exact.bin' if is_test else 'v_main_2n_sub.bin'
+            title = "График u(N)" if is_test else "График v(2N)"
+        elif mode == 'diff':
+            filename = 'uv_test_diff.bin' if is_test else 'v_main_diff.bin'
+            title = "График разности"
+        elif mode == 'v_0':
+            print("mode == v_0")
+            filename = 'v0_test_numeric.bin' if is_test else 'v1_0_main_numeric.bin'
+            title = "График v(0)(xi,yj)"
+        elif mode == 'v2_0':
+            print("mode == v2_0")
+            filename = 'v2_0_main_numeric.bin'
+            title = "График v2(0)(x2i,y2j)"
+
+
+        # Добавьте сюда условия для v_0 и v2_0, если файлы готовы
+
+        data = read_binary(filename, n, m)
+        grid = data.reshape((m + 1, n + 1))
+
+        self.surf_win = SurfaceWindow(grid, title, 0.0, 3.0, 0.0, 1.0, title)
+        self.surf_win.show()
 
     def validator(self):
         from PyQt6.QtGui import QIntValidator, QDoubleValidator
@@ -287,25 +353,24 @@ class MyWindow(QtWidgets.QDialog):
                 t1 = 0.0
 
             text = (
+                f"Метод: <b>Минимальных невязок (ММН)</b>. <br>"
                 "<b>СПРАВКА ПО РЕШЕНИЮ ТЕСТОВОЙ ЗАДАЧИ</b><br>"
                 "------------------------------------------------------------------<br>"
-                f"Для решения тестовой задачи использована сетка с числом разбиений "
-                f"по x <b>n = {self.res_n}</b> и по y <b>m = {self.res_m}</b>. <br>"
-                f"Метод: <b>Минимальных невязок (ММН)</b>. <br>"
-                f"Критерии остановки по точности <b>ε<sub>мет</sub> = {self.e_max_1}</b> "
-                f"и по числу итераций <b>N<sub>max</sub> = {self.n_max_1}</b>. <br>"
-                f"На решение схемы (СЛАУ) затрачено итераций <b>N = {self.res_iter}</b>, "
-                f"достигнута точность метода <b>ε(N) = {self.res_eps_n}</b>. <br>"
-                f"Схема (СЛАУ) решена с невязкой <b>||R(N)|| = {self.res_r_n}</b>. <br>"
-                f"Для невязки СЛАУ использована <b>норма Чебышёва</b> (норма «max»). <br>"
+                f"Использована сетка с числом разбиений: <b>n = {self.res_n}</b>, <b>m = {self.res_m}</b>. <br>"
+                f"Критерии остановки: <b>ε<sub>мет</sub> = {self.e_max_1}</b>, <b>N<sub>max</sub> = {self.n_max_1}</b>. <br>"
+                f"Затрачено итераций: <b>N = {self.res_iter}</b>. <br>"
+                f"Достигнута точность итерационного метода: <b>ε(N) = {self.res_eps_n}</b>. <br>"
+                f"Невязка СЛАУ (норма Чебышёва): <b>||R(N)|| = {self.res_r_n}</b>. <br>"
+                f"Начальное приближение: <b>нулевое</b>. <br>"
+                f"Начальная невязка: <b>||R(0)|| = {self.res_r_0}</b>. <br>"
+                f"Время расчета: <b>{t1:.4f} сек.</b><br>"
                 "------------------------------------------------------------------<br>"
-                f"Тестовая задача должна быть решена с погрешностью не более <b>ε = {err_test_limit}</b>. <br>"
-                f"Задача решена с фактической погрешностью <b>ε1 = {self.res_error}</b>. <br>"
-                f"Максимальное отклонение решений в узле: <b>x = {self.res_x_max}</b>; <b>y = {self.res_y_max}</b>. <br>"
+                "<b>ИТОГОВЫЙ КОНТРОЛЬ ТОЧНОСТИ</b><br>"
                 "------------------------------------------------------------------<br>"
-                f"В качестве начального приближения использовано: <b>нулевое</b>. <br>"
-                f"Начальная невязка СЛАУ <b>||R(0)|| = {self.res_r_0}</b> (норма Чебышёва). <br>"
-                f"<b>Время расчета: {t1:.4f} сек.</b>"
+                f"Требуемая точность: <b>ε = {err_test_limit}</b>. <br>"
+                f"Фактическая погрешность: <b>ε1 = {self.res_error}</b>. <br>"
+                f"Макс. отклонение в узле: <b>x = {self.res_x_max}</b>; <b>y = {self.res_y_max}</b>. <br>"
+                f"<b>Общее время расчета: {t1:.4f} сек.</b>"
             )
         else:
             # Расчет времени
@@ -455,6 +520,72 @@ class TableView(QWidget):
 
         layout.addWidget(self.table)
 
+class SurfaceWindow(QMainWindow):
+
+    def __init__(self, grid, title, a, b, c, d, func_name):
+        super().__init__()
+
+        self.grid = grid
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+        self.func_name = func_name
+
+        self.setWindowTitle(title)
+        self.resize(1200, 900)
+
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        self.plotter = QtInteractor(widget)
+
+        layout.addWidget(self.plotter)
+        widget.setLayout(layout)
+
+        self.setCentralWidget(widget)
+
+        self.draw_surface(grid)
+
+    def draw_surface(self, grid):
+
+        self.plotter.clear()
+        # downsample if grid is too big
+        max_points = 200
+        step = max(1, max(grid.shape)//max_points)
+        g = grid[::step, ::step].astype(np.float32)
+
+        plate_size = max(self.b - self.a, self.d - self.c)
+        z_scale = plate_size / np.max(np.abs(grid))
+        g_scaled = g * z_scale
+
+        ny, nx = g.shape
+        x = np.linspace(self.a, self.b, nx, dtype=np.float32)
+        y = np.linspace(self.c, self.d, ny, dtype=np.float32)
+
+        X, Y = np.meshgrid(x, y)
+
+        surf = pv.StructuredGrid(X, Y, g_scaled)
+        zmin = float(np.min(g))
+        zmax = float(np.max(g))
+
+        self.plotter.add_mesh(surf, cmap="viridis", smooth_shading=True, show_scalar_bar=True) # show_scalar_bar=False
+        self.plotter.show_bounds(
+            bounds=[self.a, self.b, self.c, self.d, zmin * z_scale, zmax * z_scale],
+            grid='back',
+            location='outer',
+            xtitle='x',
+            ytitle='y',
+            ztitle=f"{self.func_name} * {z_scale:.2e}",
+        )
+        self.plotter.reset_camera()
+
+    def closeEvent(self, event):
+        try:
+            self.plotter.close()
+        except:
+            pass
+        event.accept()
 
 
 

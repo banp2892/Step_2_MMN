@@ -3,13 +3,16 @@ import sys
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
-    QHBoxLayout, QLabel, QPushButton, QLineEdit, QGroupBox
+    QHBoxLayout, QLabel, QPushButton, QLineEdit, QGroupBox, QTableWidget, QAbstractItemView, QTableWidgetItem
 )
 from PyQt6 import QtWidgets, uic
 import subprocess
+import numpy as np
 
 def start_exe(exe_name, parameters):
     subprocess.run([exe_name] + parameters)
+def read_binary(filename,n,m):
+    return np.fromfile(filename,dtype=np.float64)
 
 
 class MyWindow(QtWidgets.QDialog):
@@ -23,6 +26,10 @@ class MyWindow(QtWidgets.QDialog):
         self.zadacha.currentIndexChanged.connect(self.update_info)
         self.pushButto_start_calculate.clicked.connect(self.start_calculation)
         self.pushButto_table_v.clicked.connect(self.view_v_table)
+        self.pushButto_table_u_or_v2.clicked.connect(self.view_v2_table)
+        self.pushButto_table_raznost.clicked.connect(self.view_diff_table)
+
+
 
         self.update_info()
         self.set_text_to_postanovka()
@@ -30,9 +37,58 @@ class MyWindow(QtWidgets.QDialog):
         self.label_spravka_fill()
 
 
-    def view_v_table(self):
-        pass
 
+    #table1 = 'v_main_n.bin'
+    #table2 = 'v_main_2n_sub.bin'
+    #table3 = 'v_main_diff.bin'
+
+
+
+    def view_v_table(self):
+        n, m = int(self.n), int(self.m)
+        zadacha_type = self.zadacha.currentText().strip()
+
+        if zadacha_type == 'Тестовая':
+            filename = 'v_test_numeric.bin'  # Исправлено!
+            title = "Таблица vN(xi,yj) (Тест)"
+        else:
+            filename = 'v_main_n.bin'
+            title = "Таблица v1(N)(xi,yj) (Основная)"
+        data = read_binary(filename, n, m)
+        self.v_win = TableView(data, n, m, title)
+        self.v_win.show()
+
+    def view_v2_table(self):
+        """Отображает u_exact (тест) или v(2N) (основная)"""
+        n, m = int(self.n), int(self.m)
+        zadacha_type = self.zadacha.currentText().strip()
+
+        if zadacha_type == 'Тестовая':
+            filename = 'u_test_exact.bin'
+            title = "Таблица u(N)(xi,yj)"
+        else:
+            filename = 'v_main_2n_sub.bin'
+            title = "Таблица v2(N2)(x2i,y2j)"
+
+        data = read_binary(filename, n, m)
+        self.v_win = TableView(data, n, m, title)
+        self.v_win.show()
+
+    def view_diff_table(self):
+        """Отображает разность (v - u) или (v - v2)"""
+        n, m = int(self.n), int(self.m)
+        zadacha_type = self.zadacha.currentText().strip()
+
+        if zadacha_type == 'Тестовая':
+            filename = 'uv_test_diff.bin'
+            title = "Таблица v(N)(xi,yj) - u(xi,yj)"
+        else:
+            filename = 'v_main_diff.bin'
+            title = "Таблица v(N)(xi,yj) - v(2N)(xi,yj)"
+
+        data = read_binary(filename, n, m)
+        self.v_win = TableView(data, n, m, title)
+        self.v_win.show()
 
     def start_calculation(self):
         try:
@@ -186,6 +242,8 @@ class MyWindow(QtWidgets.QDialog):
         self.label_zadacha.setText(text)
         self.rename_button_table()
 
+
+
     def validator(self):
         from PyQt6.QtGui import QIntValidator, QDoubleValidator
         from PyQt6.QtCore import QLocale
@@ -331,6 +389,27 @@ class TableView(QWidget):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setMinimumSize(800, 600)
+
+        layout = QVBoxLayout(self)
+
+        rows = m+1
+        cols = n + 1
+        self.table = QTableWidget(rows,cols)
+        self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setHorizontalHeaderLabels([f"i={i}" for i in range(cols)])
+        self.table.setVerticalHeaderLabels([f"j={j}" for j in range(m,-1,-1)])
+
+
+        for row_in_table in range(m + 1):
+            j_idx = m - row_in_table
+
+            for i_idx in range(n + 1):
+                idx_in_vector = j_idx * (n + 1) + i_idx
+
+                value = data[idx_in_vector]
+                item = QTableWidgetItem(f"{value:.6e}")
+                self.table.setItem(row_in_table, i_idx, item)
+        layout.addWidget(self.table)
 
 
 

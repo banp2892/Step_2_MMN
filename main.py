@@ -394,23 +394,49 @@ class TableView(QWidget):
 
         rows = m+1
         cols = n + 1
-        self.table = QTableWidget(rows,cols)
+
+        step_x = (0 + 3)/(n)
+        step_y = (0 + 1)/(m)
+
+        self.table = QTableWidget(rows + 1, cols + 1)
+        for i in range(n+1):
+            x_val = 0.0 + step_x * i
+            self.table.setItem(0,i+2,QTableWidgetItem(f"{x_val:.3f}"))
+
+        for j in range(m,-1,-1):
+            y_val = 1.0 - step_y * (m-j)
+            self.table.setItem(m-j+2,0,QTableWidgetItem(f"{y_val:.3f}"))
+
+
+
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setHorizontalHeaderLabels([f"i={i}" for i in range(cols)])
-        self.table.setVerticalHeaderLabels([f"j={j}" for j in range(m,-1,-1)])
+
+        # Углы управления
 
 
+        self.table.setItem(0, 1, QTableWidgetItem("xi"))
+        self.table.setItem(1, 0, QTableWidgetItem("yj"))
+
+        h_labels = ["", ""] + [f"i={i}" for i in range(n + 1)]
+        self.table.setHorizontalHeaderLabels(h_labels)
+        h2_labels = ["", ""] + [f"i={j}" for j in range(m ,-1,-1)]
+        self.table.setVerticalHeaderLabels(h2_labels)
+
+
+        # Основной цикл заполнения данных
         for row_in_table in range(m + 1):
             j_idx = m - row_in_table
-
             for i_idx in range(n + 1):
                 idx_in_vector = j_idx * (n + 1) + i_idx
 
+                # Берем значение из считанного файла
                 value = data[idx_in_vector]
-                item = QTableWidgetItem(f"{value:.6e}")
-                self.table.setItem(row_in_table, i_idx, item)
-        layout.addWidget(self.table)
+                item = QTableWidgetItem(f"{value:.6g}")
 
+                # Куда кладем в таблицу?
+                self.table.setItem(row_in_table + 1, i_idx + 1, item)
+
+        layout.addWidget(self.table)
 
 
 

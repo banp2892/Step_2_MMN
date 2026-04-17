@@ -46,12 +46,12 @@ class MyWindow(QtWidgets.QDialog):
         self.label_spravka_fill()
 
 
-
-    #table1 = 'v_main_n.bin'
-    #table2 = 'v_main_2n_sub.bin'
-    #table3 = 'v_main_diff.bin'
-
-
+    def closeEvent(self, event):
+        if hasattr(self, 'worker') and self.worker:
+            self.worker.stop()
+        if hasattr(self,'thread') and self.thread.isRunning():
+            self.thread.terminate()
+            self.thread = None
 
     def view_v_table(self):
         n, m = int(self.n), int(self.m)
@@ -192,34 +192,33 @@ class MyWindow(QtWidgets.QDialog):
 
 
 
-                # --- Общие параметры (0-6) ---
+
                 self.res_task_type = int(data[0])
                 self.res_n = data[1]
                 self.res_m = data[2]
-                self.res_iter = data[3]  # N1
-                self.res_eps_n = data[4]  # eps1
-                self.res_r_n = data[5]  # R1
-                self.res_r_0 = data[6]  # R0_1
+                self.res_iter = data[3]
+                self.res_eps_n = data[4]
+                self.res_r_n = data[5]
+                self.res_r_0 = data[6]
 
                 if self.res_task_type == 0:
-                    # ТЕСТОВАЯ ЗАДАЧА
                     self.res_error = data[7]
                     self.res_x_max = data[8]
                     self.res_y_max = data[9]
                     self.res_time_1 = data[10]
                 else:
-                    # ОСНОВНАЯ ЗАДАЧА
-                    self.res_iter_2 = data[7]  # N2
-                    self.res_eps_n_2 = data[8]  # eps2
-                    self.res_r_n_2 = data[9]  # R2
-                    self.res_r_0_2 = data[10]  # R0_2
-                    self.res_error = data[11]  # Оценка по половинному шагу
+
+                    self.res_iter_2 = data[7]
+                    self.res_eps_n_2 = data[8]
+                    self.res_r_n_2 = data[9]
+                    self.res_r_0_2 = data[10]
+                    self.res_error = data[11]
                     self.res_x_max = data[12]
                     self.res_y_max = data[13]
                     self.res_time_1 = data[14]
                     self.res_time_2 = data[15]
 
-            # Обновляем справку
+
             is_main_task = (self.res_task_type != 0)
             self.pushButto_graphic_v2_0.setEnabled(is_main_task)
 
@@ -249,7 +248,6 @@ class MyWindow(QtWidgets.QDialog):
         self.label_postanoka_zadachi.setWordWrap(True)
         self.label_postanoka_zadachi.setText(static_text)
     def update_info(self):
-        # Получаем выбранную задачу
         zadacha_type = self.zadacha.currentText().strip()
 
         if zadacha_type == "Тестовая":
@@ -292,7 +290,7 @@ class MyWindow(QtWidgets.QDialog):
             zadacha_type = self.zadacha.currentText().strip()
             is_test = (zadacha_type == 'Тестовая')
 
-            # По умолчанию размер (n+1)x(m+1)
+
             grid_n, grid_m = n + 1, m + 1
 
             if mode == 'v':
@@ -310,9 +308,7 @@ class MyWindow(QtWidgets.QDialog):
             elif mode == 'v2_0':
                 filename = 'v2_0_main_numeric.bin'
                 title = "График v2(0)(x2i,y2j)"
-                # Если в С++ ты сделал (n+1)x(m+1) для v2_0, оставляй по умолчанию.
-                # Если там осталось n*m, то раскомментируй строку ниже:
-                # grid_n, grid_m = n, m
+
 
             data = read_binary(filename, n, m)
 
@@ -320,15 +316,12 @@ class MyWindow(QtWidgets.QDialog):
                 print(f"Файл {filename} пуст!")
                 return
 
-            # Делаем reshape с учетом выбранных размеров
             grid = data.reshape((grid_m, grid_n))
 
-            # Создаем новое окно и сохраняем его в список
             new_plot = SurfaceWindow(grid, title, 0.0, 3.0, 0.0, 1.0, title)
             self.opened_plots.append(new_plot)  # Не дает окну закрыться
             new_plot.show()
 
-            # Чистим список от закрытых окон (чтобы не ели память)
             self.opened_plots = [w for w in self.opened_plots if w.isVisible()]
 
         except Exception as e:
@@ -360,7 +353,7 @@ class MyWindow(QtWidgets.QDialog):
         zadacha_type = self.zadacha.currentText().strip()
 
         if zadacha_type == "Тестовая":
-            # Лимит погрешности из методички
+
             err_test_limit = "0.5·10⁻⁶"
 
             try:
@@ -389,7 +382,7 @@ class MyWindow(QtWidgets.QDialog):
                 f"<b>Общее время расчета: {t1:.4f} сек.</b>"
             )
         else:
-            # Расчет времени
+
             try:
                 t1 = float(self.res_time_1)
                 t2 = float(self.res_time_2)
@@ -450,11 +443,10 @@ class Worker(QObject):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                encoding="cp1251",  # Пробуем Windows-кодировку
+                encoding="cp1251",
                 shell=True
             )
 
-            # Проверка, запустился ли процесс
             if process.stdout:
                 for line in process.stdout:
                     clean_line = line.strip()
@@ -471,6 +463,11 @@ class Worker(QObject):
         finally:
             self.finished.emit()
 
+        def stop(self):
+            if self.process:
+                self.process.kill()
+                self.finished = True
+
 
 class TableView(QWidget):
     def __init__(self, data, n,m,title,parent=None):
@@ -481,7 +478,6 @@ class TableView(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)  # Убираем рамки вокруг таблицы
         layout.setSpacing(0)
-
 
         rows = m+1
         cols = n + 1
@@ -506,10 +502,8 @@ class TableView(QWidget):
 
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
-        # Углы управления
 
 
-        #self.table.setItem(0, 1, QTableWidgetItem("xi"))
         self.table.setItem(0, 0, QTableWidgetItem("yj                   xi"))
 
         h_labels = [""] + [f"i={i}" for i in range(n + 1)]
@@ -524,14 +518,11 @@ class TableView(QWidget):
             for i_idx in range(n + 1):
                 idx_in_vector = j_idx * (n + 1) + i_idx
 
-                # Берем значение из считанного файла
                 value = data[idx_in_vector]
                 if abs(value)<1e-17:
                     item = QTableWidgetItem(f"{0:.6g}")
                 else:
                     item = QTableWidgetItem(f"{value:.6g}")
-
-                # Куда кладем в таблицу?
                 self.table.setItem(row_in_table + 1, i_idx + 1, item)
 
         layout.addWidget(self.table)
@@ -610,5 +601,5 @@ if __name__ == "__main__":
     window = MyWindow()
     window.show()
 
-    # Код после exec() выполнится только после ЗАКРЫТИЯ окна
+
     sys.exit(app.exec())

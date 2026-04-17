@@ -22,6 +22,8 @@ class MyWindow(QtWidgets.QDialog):
         super(MyWindow, self).__init__()
         uic.loadUi('design.ui', self)
 
+        self.opened_plots = []
+
         self.read_parametrs()
 
 
@@ -284,39 +286,53 @@ class MyWindow(QtWidgets.QDialog):
         self.pushButto_graphic_v2_0.setEnabled(False)
         self.pushButto_graphic_v_0.setEnabled(False)
 
-
     def show_graphic(self, mode):
-        n, m = int(self.n), int(self.m)
-        zadacha_type = self.zadacha.currentText().strip()
-        is_test = (zadacha_type == 'Тестовая')
+        try:
+            n, m = int(self.n), int(self.m)
+            zadacha_type = self.zadacha.currentText().strip()
+            is_test = (zadacha_type == 'Тестовая')
 
-        # Логика выбора файла в зависимости от нажатой кнопки (mode)
-        if mode == 'v':
-            filename = 'v_test_numeric.bin' if is_test else 'v_main_n.bin'
-            title = "График v(N)"
-        elif mode == 'u_v2':
-            filename = 'u_test_exact.bin' if is_test else 'v_main_2n_sub.bin'
-            title = "График u(N)" if is_test else "График v(2N)"
-        elif mode == 'diff':
-            filename = 'uv_test_diff.bin' if is_test else 'v_main_diff.bin'
-            title = "График разности"
-        elif mode == 'v_0':
-            print("mode == v_0")
-            filename = 'v0_test_numeric.bin' if is_test else 'v1_0_main_numeric.bin'
-            title = "График v(0)(xi,yj)"
-        elif mode == 'v2_0':
-            print("mode == v2_0")
-            filename = 'v2_0_main_numeric.bin'
-            title = "График v2(0)(x2i,y2j)"
+            # По умолчанию размер (n+1)x(m+1)
+            grid_n, grid_m = n + 1, m + 1
 
+            if mode == 'v':
+                filename = 'v_test_numeric.bin' if is_test else 'v_main_n.bin'
+                title = "График v(N)"
+            elif mode == 'u_v2':
+                filename = 'u_test_exact.bin' if is_test else 'v_main_2n_sub.bin'
+                title = "График u(N)" if is_test else "График v(2N)"
+            elif mode == 'diff':
+                filename = 'uv_test_diff.bin' if is_test else 'v_main_diff.bin'
+                title = "График разности"
+            elif mode == 'v_0':
+                filename = 'v0_test_numeric.bin' if is_test else 'v1_0_main_numeric.bin'
+                title = "График v(0)(xi,yj)"
+            elif mode == 'v2_0':
+                filename = 'v2_0_main_numeric.bin'
+                title = "График v2(0)(x2i,y2j)"
+                # Если в С++ ты сделал (n+1)x(m+1) для v2_0, оставляй по умолчанию.
+                # Если там осталось n*m, то раскомментируй строку ниже:
+                # grid_n, grid_m = n, m
 
-        # Добавьте сюда условия для v_0 и v2_0, если файлы готовы
+            data = read_binary(filename, n, m)
 
-        data = read_binary(filename, n, m)
-        grid = data.reshape((m + 1, n + 1))
+            if data.size == 0:
+                print(f"Файл {filename} пуст!")
+                return
 
-        self.surf_win = SurfaceWindow(grid, title, 0.0, 3.0, 0.0, 1.0, title)
-        self.surf_win.show()
+            # Делаем reshape с учетом выбранных размеров
+            grid = data.reshape((grid_m, grid_n))
+
+            # Создаем новое окно и сохраняем его в список
+            new_plot = SurfaceWindow(grid, title, 0.0, 3.0, 0.0, 1.0, title)
+            self.opened_plots.append(new_plot)  # Не дает окну закрыться
+            new_plot.show()
+
+            # Чистим список от закрытых окон (чтобы не ели память)
+            self.opened_plots = [w for w in self.opened_plots if w.isVisible()]
+
+        except Exception as e:
+            print(f"Ошибка при отрисовке: {e}")
 
     def validator(self):
         from PyQt6.QtGui import QIntValidator, QDoubleValidator

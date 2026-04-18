@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1155</width>
-    <height>881</height>
+    <width>1149</width>
+    <height>935</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -53,34 +53,6 @@
       <property name="text">
        <string>Вариант и постановка задачи</string>
       </property>
-     </widget>
-    </item>
-    <item row="3" column="1">
-     <widget class="QComboBox" name="zadacha">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="font">
-       <font>
-        <family>Calibri</family>
-        <pointsize>12</pointsize>
-        <bold>false</bold>
-        <stylestrategy>PreferAntialias</stylestrategy>
-       </font>
-      </property>
-      <item>
-       <property name="text">
-        <string>Тестовая</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Основная </string>
-       </property>
-      </item>
      </widget>
     </item>
     <item row="2" column="0">
@@ -129,6 +101,34 @@
       </property>
      </spacer>
     </item>
+    <item row="3" column="1">
+     <widget class="QComboBox" name="zadacha">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="font">
+       <font>
+        <family>Calibri</family>
+        <pointsize>12</pointsize>
+        <bold>false</bold>
+        <stylestrategy>PreferAntialias</stylestrategy>
+       </font>
+      </property>
+      <item>
+       <property name="text">
+        <string>Тестовая</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Основная </string>
+       </property>
+      </item>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QGroupBox" name="parametr_box_2">
@@ -137,7 +137,7 @@
      <x>20</x>
      <y>390</y>
      <width>551</width>
-     <height>271</height>
+     <height>301</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -171,16 +171,13 @@
       </property>
      </widget>
     </item>
-    <item row="8" column="1">
-     <widget class="QLineEdit" name="lineEdit_e_max_2">
-      <property name="maximumSize">
-       <size>
-        <width>100</width>
-        <height>16777215</height>
-       </size>
-      </property>
+    <item row="10" column="0">
+     <widget class="QLabel" name="label_e_max_3">
       <property name="text">
-       <string>1e-15</string>
+       <string>Начальное приближение:</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -194,39 +191,6 @@
       </property>
       <property name="text">
        <string>1e-15</string>
-      </property>
-     </widget>
-    </item>
-    <item row="8" column="0">
-     <widget class="QLabel" name="label_e_max_2">
-      <property name="text">
-       <string>Выход по точности: (удвоенная сетка)</string>
-      </property>
-      <property name="wordWrap">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="7" column="0">
-     <widget class="QLabel" name="label_n_max_2">
-      <property name="text">
-       <string>Выход по количеству шагов: (удвоенная сетка)</string>
-      </property>
-      <property name="wordWrap">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="1">
-     <widget class="QLineEdit" name="lineEdit_m">
-      <property name="maximumSize">
-       <size>
-        <width>100</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="text">
-       <string>100</string>
       </property>
      </widget>
     </item>
@@ -249,35 +213,8 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="0">
-     <widget class="QLabel" name="label_n">
-      <property name="text">
-       <string>Количество разбиений по x:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="0">
-     <widget class="QLabel" name="label_n_max_1">
-      <property name="text">
-       <string>Выход по количеству шагов:</string>
-      </property>
-     </widget>
-    </item>
     <item row="7" column="1">
      <widget class="QLineEdit" name="lineEdit_n_max_2">
-      <property name="maximumSize">
-       <size>
-        <width>100</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="text">
-       <string>500000</string>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="1">
-     <widget class="QLineEdit" name="lineEdit_n_max_1">
       <property name="maximumSize">
        <size>
         <width>100</width>
@@ -296,23 +233,86 @@
       </property>
      </widget>
     </item>
-    <item row="4" column="2">
-     <spacer name="horizontalSpacer">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
+    <item row="8" column="0">
+     <widget class="QLabel" name="label_e_max_2">
+      <property name="text">
+       <string>Выход по точности: (удвоенная сетка)</string>
       </property>
-      <property name="sizeType">
-       <enum>QSizePolicy::Fixed</enum>
+      <property name="wordWrap">
+       <bool>true</bool>
       </property>
-      <property name="sizeHint" stdset="0">
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="label_n">
+      <property name="text">
+       <string>Количество разбиений по x:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QLabel" name="label_n_max_1">
+      <property name="text">
+       <string>Выход по количеству шагов:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="12" column="1">
+     <widget class="QPushButton" name="pushButto_start_calculate">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="maximumSize">
        <size>
-        <width>50</width>
-        <height>20</height>
+        <width>110</width>
+        <height>16777215</height>
        </size>
       </property>
-     </spacer>
+      <property name="text">
+       <string>Вычислить</string>
+      </property>
+     </widget>
     </item>
-    <item row="9" column="0">
+    <item row="7" column="0">
+     <widget class="QLabel" name="label_n_max_2">
+      <property name="text">
+       <string>Выход по количеству шагов: (удвоенная сетка)</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="1">
+     <widget class="QLineEdit" name="lineEdit_n_max_1">
+      <property name="maximumSize">
+       <size>
+        <width>100</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>500000</string>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="1">
+     <widget class="QLineEdit" name="lineEdit_e_max_2">
+      <property name="maximumSize">
+       <size>
+        <width>100</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>1e-15</string>
+      </property>
+     </widget>
+    </item>
+    <item row="12" column="0">
      <widget class="QLabel" name="label_console">
       <property name="text">
        <string>Вычисление:</string>
@@ -322,8 +322,8 @@
       </property>
      </widget>
     </item>
-    <item row="9" column="1">
-     <widget class="QPushButton" name="pushButto_start_calculate">
+    <item row="2" column="1">
+     <widget class="QLineEdit" name="lineEdit_m">
       <property name="maximumSize">
        <size>
         <width>100</width>
@@ -331,8 +331,52 @@
        </size>
       </property>
       <property name="text">
-       <string>Вычислить</string>
+       <string>100</string>
       </property>
+     </widget>
+    </item>
+    <item row="10" column="1">
+     <widget class="QComboBox" name="start_interpolation">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>170</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>Calibri</family>
+        <pointsize>12</pointsize>
+        <bold>false</bold>
+        <stylestrategy>PreferAntialias</stylestrategy>
+       </font>
+      </property>
+      <item>
+       <property name="text">
+        <string>Нулевое</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Среднее</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Интерполяция по X</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Интерполяция по Y</string>
+       </property>
+      </item>
      </widget>
     </item>
    </layout>
@@ -343,7 +387,7 @@
      <x>580</x>
      <y>10</y>
      <width>551</width>
-     <height>651</height>
+     <height>681</height>
     </rect>
    </property>
    <property name="font">
@@ -377,9 +421,9 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>660</y>
+     <y>690</y>
      <width>1111</width>
-     <height>111</height>
+     <height>121</height>
     </rect>
    </property>
    <property name="font">
@@ -445,7 +489,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>770</y>
+     <y>810</y>
      <width>1111</width>
      <height>111</height>
     </rect>

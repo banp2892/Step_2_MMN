@@ -108,12 +108,15 @@ class MyWindow(QtWidgets.QDialog):
             self.pushButto_start_calculate.setEnabled(False)
 
             zadacha_type = self.zadacha.currentText().strip()
+
+            approx_id = self.start_interpolation.currentIndex()
+
             base_bounds = ["0.0", "3.0", "0.0", "1.0"]
 
             if zadacha_type == 'Тестовая':
-                params = base_bounds + [self.n, self.m, self.e_max_1, self.n_max_1, "0"]
+                params = base_bounds + [self.n, self.m, self.e_max_1, self.n_max_1, "0", str(approx_id)]
             else:
-                params = base_bounds + [self.n, self.m, self.e_max_1, self.n_max_1, "1", self.e_max_2, self.n_max_2]
+                params = base_bounds + [self.n, self.m, self.e_max_1, self.n_max_1, "1",str(approx_id), self.e_max_2, self.n_max_2]
 
             cmd = ["calculate.exe"] + params
             print(f"Команда: {cmd}")
@@ -351,6 +354,8 @@ class MyWindow(QtWidgets.QDialog):
             return
 
         zadacha_type = self.zadacha.currentText().strip()
+        interpolation_type = self.start_interpolation.currentText().strip()
+
 
         if zadacha_type == "Тестовая":
 
@@ -370,7 +375,7 @@ class MyWindow(QtWidgets.QDialog):
                 f"Затрачено итераций: <b>N = {self.res_iter}</b>. <br>"
                 f"Достигнута точность итерационного метода: <b>ε(N) = {self.res_eps_n}</b>. <br>"
                 f"Невязка СЛАУ (норма Чебышёва): <b>||R(N)|| = {self.res_r_n}</b>. <br>"
-                f"Начальное приближение: <b>нулевое</b>. <br>"
+                f"Начальное приближение: <b>{interpolation_type}</b>. <br>"
                 f"Начальная невязка: <b>||R(0)|| = {self.res_r_0}</b>. <br>"
                 f"Время расчета: <b>{t1:.4f} сек.</b><br>"
                 "------------------------------------------------------------------<br>"
@@ -399,7 +404,7 @@ class MyWindow(QtWidgets.QDialog):
                 f"Затрачено итераций: <b>N = {self.res_iter}</b>. <br>"
                 f"Достигнута точность итерационного метода: <b>ε(N) = {self.res_eps_n}</b>. <br>"
                 f"Невязка СЛАУ (норма Чебышёва): <b>||R(N)|| = {self.res_r_n}</b>. <br>"
-                f"Начальное приближение: <b>нулевое</b>. <br>"
+                f"Начальное приближение: <b>{interpolation_type}</b>. <br>"
                 f"Начальная невязка: <b>||R(0)|| = {self.res_r_0}</b>. <br>"
                 f"Время расчета: <b>{t1:.4f} сек.</b><br>"
                 "------------------------------------------------------------------<br>"
@@ -411,7 +416,7 @@ class MyWindow(QtWidgets.QDialog):
                 f"Затрачено итераций: <b>N2 = {self.res_iter_2}</b>. <br>"
                 f"Достигнута точность итерационного метода: <b>ε(N2) = {self.res_eps_n_2}</b>. <br>"
                 f"Невязка СЛАУ (норма Чебышёва): <b>||R(N2)|| = {self.res_r_n_2}</b>. <br>"
-                f"Начальное приближение: <b>нулевое</b>. <br>"
+                f"Начальное приближение: <b>{interpolation_type}</b>. <br>"
                 f"Начальная невязка: <b>||R(0)|| = {self.res_r_0_2}</b>. <br>"
                 f"Время расчета: <b>{t2:.4f} сек.</b><br>"
                 "------------------------------------------------------------------<br>"

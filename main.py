@@ -576,7 +576,16 @@ class SurfaceWindow(QMainWindow):
         zmin = float(np.min(g))
         zmax = float(np.max(g))
 
-        self.plotter.add_mesh(surf, cmap="viridis", smooth_shading=True, show_scalar_bar=True) # show_scalar_bar=False
+        self.plotter.add_mesh(
+            surf,
+            cmap="plasma",  # "viridis", "plasma", "inferno", "jet", "coolwarm"
+            smooth_shading=True,
+            show_edges=True,  # ВКЛЮЧАЕТ СЕТКУ
+            edge_color="black",  # Цвет линий сетки
+            line_width=1,  # Толщина линий сетки
+            lighting=True,  # Добавляет объем за счет теней
+            show_scalar_bar=True
+        )
         self.plotter.show_bounds(
             bounds=[self.a, self.b, self.c, self.d, zmin * z_scale, zmax * z_scale],
             grid='back',

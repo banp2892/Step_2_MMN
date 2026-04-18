@@ -62,6 +62,65 @@ void DirihleVPuassone::prepare_v_and_i_test()
 }
 
 
+void DirihleVPuassone::choosing_approximation(StartApproximation type) {
+    int cols = n + 1;
+    int rows = m + 1;
+
+    switch (type) {
+        case AVERAGE: {
+			std::cout << "Выбрано AVERAGE" << std::endl;
+            double sum = 0.0;
+            for (int i = 0; i <= n; ++i) {
+                sum += v[0 * cols + i];
+                sum += v[m * cols + i];
+            }
+            for (int j = 1; j < m; ++j) {
+                sum += v[j * cols + 0];
+                sum += v[j * cols + n];
+            }
+            
+            double avg = sum / (2.0 * (n + 1) + 2.0 * (m - 1));
+
+            for (int j = 1; j < m; ++j)
+                for (int i = 1; i < n; ++i)
+                    v[j * cols + i] = avg;
+            break;
+        }
+
+        case INTERP_X:
+			std::cout << "Выбрано INTERP_X" << std::endl;
+            for (int j = 1; j < m; ++j) {
+                double left = v[j * cols + 0];
+                double right = v[j * cols + n];
+                for (int i = 1; i < n; ++i) {
+                    v[j * cols + i] = left + (right - left) * (double)i / n;
+                }
+            }
+            break;
+
+        case INTERP_Y:
+			std::cout << "Выбрано INTERP_Y" << std::endl;
+            for (int i = 1; i < n; ++i) {
+                double bottom = v[0 * cols + i];
+                double top = v[m * cols + i];
+                for (int j = 1; j < m; ++j) {
+                    v[j * cols + i] = bottom + (top - bottom) * (double)j / m;
+                }
+            }
+            break;
+
+        case ZERO:
+			std::cout << "Выбрано ZERO" << std::endl;
+        default:
+            for (int j = 1; j < m; ++j)
+                for (int i = 1; i < n; ++i)
+                    v[j * cols + i] = 0.0;
+            break;
+    }
+}
+
+
+
 
 
 

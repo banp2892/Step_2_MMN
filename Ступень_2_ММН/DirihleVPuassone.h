@@ -1,5 +1,7 @@
 #pragma once
 #include <vector>
+enum StartApproximation { ZERO, AVERAGE, INTERP_X, INTERP_Y };
+
 
 class DirihleVPuassone {
 	const double pi = 3.141592653589793;
@@ -70,6 +72,9 @@ public:
 	double Nu3_test(double x);
 	double Nu4_test(double x);
 
+
+
+	void choosing_approximation(StartApproximation type); ///> выбираем начальное приближение
 
 
 	// MMN 

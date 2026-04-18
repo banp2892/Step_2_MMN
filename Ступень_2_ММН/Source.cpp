@@ -8,6 +8,13 @@
 #include <fstream>
 #include <vector>
 
+/**
+* 
+* @node Ступень_2_ММН.exe 0.0 3.0 0.0 1.0 100 100 1e-9 500000 1 1 1e-9 500000
+
+*/
+
+
 void save_to_binary(const std::string& filename, const std::vector<double>& data) {
     std::ofstream out(filename, std::ios::binary);
     if (out.is_open()) {
@@ -19,13 +26,13 @@ void save_to_binary(const std::string& filename, const std::vector<double>& data
 int main(int argc, char* argv[]) {
     setlocale(LC_ALL, "Russian");
 
-    if (argc < 10) {
+    if (argc < 11) {
         std::cerr << "Недостаточно аргументов!" << std::endl;
         return 1;
     }
 
     int task_type = std::stoi(argv[9]);
-    if (task_type == 1 && argc < 12) {
+    if (task_type == 1 && argc < 13) {
         std::cerr << "Для основной задачи необходимо указать e_max_2 и n_max_2!" << std::endl;
         return 1;
     }
@@ -35,8 +42,11 @@ int main(int argc, char* argv[]) {
     int n = std::stoi(argv[5]), m = std::stoi(argv[6]);
     double e_max = std::stod(argv[7]);
     int n_max = std::stoi(argv[8]);
-    double e_max_2 = (argc >= 12) ? std::stod(argv[10]) : e_max;
-    int n_max_2 = (argc >= 12) ? std::stoi(argv[11]) : n_max;
+    int approx_idx = std::stoi(argv[10]);
+    double e_max_2 = (argc >= 12) ? std::stod(argv[11]) : e_max;
+    int n_max_2 = (argc >= 12) ? std::stoi(argv[12]) : n_max;
+    
+    StartApproximation approx_type = static_cast<StartApproximation>(approx_idx);
 
     int total_n = 0, total_n_2 = 0;
     double total_e = 0.0, r_n = 0.0, r_0_initial = 0.0;
@@ -49,6 +59,7 @@ int main(int argc, char* argv[]) {
     if (task_type == 0) {
 
         solver1.prepare_v_and_i_test();
+        solver1.choosing_approximation(approx_type);
         solver1.calculate_r();
         r_0_initial = solver1.get_chebyshov_norma_for_vector(solver1.r);
 
@@ -76,6 +87,7 @@ int main(int argc, char* argv[]) {
     else {
 
         solver1.prepare_v_and_i_main();
+        solver1.choosing_approximation(approx_type);
         solver1.calculate_r();
         r_0_initial = solver1.get_chebyshov_norma_for_vector(solver1.r);
 
@@ -93,6 +105,7 @@ int main(int argc, char* argv[]) {
 
         DirihleVPuassone solver2(a, b, c, d, n * 2, m * 2);
         solver2.prepare_v_and_i_main();
+        solver2.choosing_approximation(approx_type);
         solver2.calculate_r();
         r_0_2 = solver2.get_chebyshov_norma_for_vector(solver2.r);
 

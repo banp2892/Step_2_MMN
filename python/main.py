@@ -1,4 +1,7 @@
 import sys
+import os
+import subprocess
+import numpy as np
 
 import pyvista as pv
 from pyvistaqt import QtInteractor
@@ -8,24 +11,25 @@ from PyQt6.QtWidgets import (
     QHBoxLayout, QLabel, QPushButton, QLineEdit, QGroupBox, QTableWidget, QAbstractItemView, QTableWidgetItem
 )
 from PyQt6 import QtWidgets, uic
-import subprocess
-import numpy as np
 
 def start_exe(exe_name, parameters):
     subprocess.run([exe_name] + parameters)
-def read_binary(filename,n,m):
-    return np.fromfile(filename,dtype=np.float64)
+
+def read_binary(filename, n, m):
+    return np.fromfile(filename, dtype=np.float64)
 
 
 class MyWindow(QtWidgets.QDialog):
     def __init__(self):
         super(MyWindow, self).__init__()
-        uic.loadUi('design.ui', self)
+        
+        # Получаем абсолютный путь к папке со скриптом, чтобы UI файл всегда находился
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        ui_path = os.path.join(script_dir, 'design.ui')
+        uic.loadUi(ui_path, self)
 
         self.opened_plots = []
-
         self.read_parametrs()
-
 
         self.zadacha.currentIndexChanged.connect(self.update_info)
         self.pushButto_start_calculate.clicked.connect(self.start_calculation)
@@ -39,7 +43,6 @@ class MyWindow(QtWidgets.QDialog):
         self.pushButto_graphic_v_0.clicked.connect(lambda: self.show_graphic('v_0'))
         self.pushButto_graphic_v2_0.clicked.connect(lambda: self.show_graphic('v2_0'))
 
-
         self.update_info()
         self.set_text_to_postanovka()
         self.validator()
@@ -49,7 +52,7 @@ class MyWindow(QtWidgets.QDialog):
     def closeEvent(self, event):
         if hasattr(self, 'worker') and self.worker:
             self.worker.stop()
-        if hasattr(self,'thread') and self.thread.isRunning():
+        if hasattr(self, 'thread') and self.thread.isRunning():
             self.thread.terminate()
             self.thread = None
 
@@ -58,7 +61,7 @@ class MyWindow(QtWidgets.QDialog):
         zadacha_type = self.zadacha.currentText().strip()
 
         if zadacha_type == 'Тестовая':
-            filename = 'data/v_test_numeric.bin'  # Исправлено!
+            filename = 'data/v_test_numeric.bin'
             title = "Таблица vN(xi,yj) (Тест)"
         else:
             filename = 'data/v_main_n.bin'
@@ -104,19 +107,15 @@ class MyWindow(QtWidgets.QDialog):
             print("--- Запуск процесса ---")
             self.read_parametrs()
 
-
             self.pushButto_start_calculate.setEnabled(False)
-
             zadacha_type = self.zadacha.currentText().strip()
-
             approx_id = self.start_interpolation.currentIndex()
-
             base_bounds = ["0.0", "3.0", "0.0", "1.0"]
 
             if zadacha_type == 'Тестовая':
                 params = base_bounds + [self.n, self.m, self.e_max_1, self.n_max_1, "0", str(approx_id)]
             else:
-                params = base_bounds + [self.n, self.m, self.e_max_1, self.n_max_1, "1",str(approx_id), self.e_max_2, self.n_max_2]
+                params = base_bounds + [self.n, self.m, self.e_max_1, self.n_max_1, "1", str(approx_id), self.e_max_2, self.n_max_2]
 
             cmd = ["calculate.exe"] + params
             print(f"Команда: {cmd}")
@@ -124,7 +123,6 @@ class MyWindow(QtWidgets.QDialog):
             self.thread = QThread()
             self.worker = Worker(cmd)
             self.worker.moveToThread(self.thread)
-
 
             self.thread.started.connect(self.worker.run)
             self.worker.text_for_console.connect(self.update_console_label)
@@ -135,7 +133,6 @@ class MyWindow(QtWidgets.QDialog):
             self.thread.finished.connect(self.thread.deleteLater)
             self.thread.finished.connect(self.read_results)
 
-
             print("Поток подготовлен, запускаю...")
             self.thread.start()
 
@@ -145,7 +142,7 @@ class MyWindow(QtWidgets.QDialog):
 
     def rename_button_table(self):
         zadacha_type = self.zadacha.currentText().strip()
-        if zadacha_type=="Тестовая":
+        if zadacha_type == "Тестовая":
             self.pushButto_table_v.setText("Таблица v(N)(xi,yj)")
             self.pushButto_table_u_or_v2.setText("Таблица u(N)(xi,yj)")
             self.pushButto_table_raznost.setText("Таблица v(N)(xi,yj) - u(N)(xi,yj)")
@@ -156,7 +153,7 @@ class MyWindow(QtWidgets.QDialog):
 
     def rename_button_graphic(self):
         zadacha_type = self.zadacha.currentText().strip()
-        if zadacha_type=="Тестовая":
+        if zadacha_type == "Тестовая":
             self.pushButto_graphic_v.setText("График v(N)(xi,yj)")
             self.pushButto_graphic_u_or_v2.setText("График u(N)(xi,yj)")
             self.pushButto_graphic_raznost.setText("График v(N)(xi,yj) - u(N)(xi,yj)")
@@ -170,7 +167,6 @@ class MyWindow(QtWidgets.QDialog):
         self.m = self.lineEdit_m.text()
         self.e_max_1 = self.lineEdit_e_max_1.text()
         self.n_max_1 = self.lineEdit_n_max_1.text()
-
         self.e_max_2 = self.lineEdit_e_max_2.text()
         self.n_max_2 = self.lineEdit_n_max_2.text()
 
@@ -193,9 +189,6 @@ class MyWindow(QtWidgets.QDialog):
                 self.pushButto_graphic_v.setEnabled(True)
                 self.pushButto_graphic_v_0.setEnabled(True)
 
-
-
-
                 self.res_task_type = int(data[0])
                 self.res_n = data[1]
                 self.res_m = data[2]
@@ -210,7 +203,6 @@ class MyWindow(QtWidgets.QDialog):
                     self.res_y_max = data[9]
                     self.res_time_1 = data[10]
                 else:
-
                     self.res_iter_2 = data[7]
                     self.res_eps_n_2 = data[8]
                     self.res_r_n_2 = data[9]
@@ -221,11 +213,10 @@ class MyWindow(QtWidgets.QDialog):
                     self.res_time_1 = data[14]
                     self.res_time_2 = data[15]
 
+                is_main_task = (self.res_task_type != 0)
+                self.pushButto_graphic_v2_0.setEnabled(is_main_task)
 
-            is_main_task = (self.res_task_type != 0)
-            self.pushButto_graphic_v2_0.setEnabled(is_main_task)
-
-            self.label_spravka_fill()
+                self.label_spravka_fill()
 
         except FileNotFoundError:
             print("stats.txt еще не создан")
@@ -247,9 +238,9 @@ class MyWindow(QtWidgets.QDialog):
             "a = 0.0, &nbsp; b = 3.0, &nbsp; "
             "c = 0.0, &nbsp; d = 1.0"
         )
-
         self.label_postanoka_zadachi.setWordWrap(True)
         self.label_postanoka_zadachi.setText(static_text)
+
     def update_info(self):
         zadacha_type = self.zadacha.currentText().strip()
 
@@ -272,7 +263,6 @@ class MyWindow(QtWidgets.QDialog):
                 "<i>u</i>(<i>x</i>, <i>d</i>) = 0"
             )
 
-
         self.label_zadacha.setWordWrap(True)
         self.label_zadacha.setText(text)
         self.rename_button_table()
@@ -293,7 +283,6 @@ class MyWindow(QtWidgets.QDialog):
             zadacha_type = self.zadacha.currentText().strip()
             is_test = (zadacha_type == 'Тестовая')
 
-
             grid_n, grid_m = n + 1, m + 1
 
             if mode == 'v':
@@ -312,7 +301,6 @@ class MyWindow(QtWidgets.QDialog):
                 filename = 'data/v2_0_main_numeric.bin'
                 title = "График v2(0)(x2i,y2j)"
 
-
             data = read_binary(filename, n, m)
 
             if data.size == 0:
@@ -322,7 +310,7 @@ class MyWindow(QtWidgets.QDialog):
             grid = data.reshape((grid_m, grid_n))
 
             new_plot = SurfaceWindow(grid, title, 0.0, 3.0, 0.0, 1.0, title)
-            self.opened_plots.append(new_plot)  # Не дает окну закрыться
+            self.opened_plots.append(new_plot)
             new_plot.show()
 
             self.opened_plots = [w for w in self.opened_plots if w.isVisible()]
@@ -334,18 +322,14 @@ class MyWindow(QtWidgets.QDialog):
         from PyQt6.QtGui import QIntValidator, QDoubleValidator
         from PyQt6.QtCore import QLocale
 
-        # Валидатор для целых положительных чисел (n, m, n_max)
         int_validator = QIntValidator(2, 1000000, self)
         self.lineEdit_n.setValidator(int_validator)
         self.lineEdit_m.setValidator(int_validator)
         self.lineEdit_n_max_1.setValidator(int_validator)
 
-
         eps_validator = QDoubleValidator(0.0, 1.0, 18, self)
         eps_validator.setNotation(QDoubleValidator.Notation.ScientificNotation)
-
         eps_validator.setLocale(QLocale(QLocale.Language.English, QLocale.Country.UnitedStates))
-
         self.lineEdit_e_max_1.setValidator(eps_validator)
 
     def label_spravka_fill(self):
@@ -356,11 +340,8 @@ class MyWindow(QtWidgets.QDialog):
         zadacha_type = self.zadacha.currentText().strip()
         interpolation_type = self.start_interpolation.currentText().strip()
 
-
         if zadacha_type == "Тестовая":
-
             err_test_limit = "0.5·10⁻⁶"
-
             try:
                 t1 = float(self.res_time_1)
             except:
@@ -387,7 +368,6 @@ class MyWindow(QtWidgets.QDialog):
                 f"<b>Общее время расчета: {t1:.4f} сек.</b>"
             )
         else:
-
             try:
                 t1 = float(self.res_time_1)
                 t2 = float(self.res_time_2)
@@ -410,7 +390,6 @@ class MyWindow(QtWidgets.QDialog):
                 "------------------------------------------------------------------<br>"
                 "<b>СПРАВКА ПО РЕШЕНИЮ (СЕТКА С ПОЛОВИННЫМ ШАГОМ)</b><br>"
                 "------------------------------------------------------------------<br>"
-                
                 f"Использована сетка с числом разбиений: <b>n = {int(self.res_n) * 2}</b>, <b>m = {int(self.res_m) * 2}</b>. <br>"
                 f"Критерии остановки: <b>ε<sub>мет-2</sub> = {self.e_max_2}</b>, <b>N<sub>max-2</sub> = {self.n_max_2}</b>. <br>"
                 f"Затрачено итераций: <b>N2 = {self.res_iter_2}</b>. <br>"
@@ -439,28 +418,27 @@ class Worker(QObject):
     def __init__(self, command_args):
         super().__init__()
         self.command_args = command_args
+        self.process = None  # Инициализация для предотвращения ошибки удаления
 
     def run(self):
         try:
             print(f"Worker начал работу с: {self.command_args}")
-            process = subprocess.Popen(
+            self.process = subprocess.Popen(
                 self.command_args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                encoding="cp1251",
+                encoding="cp866",
                 shell=True
             )
 
-            if process.stdout:
-                for line in process.stdout:
+            if self.process.stdout:
+                for line in self.process.stdout:
                     clean_line = line.strip()
                     if clean_line:
-                        #print(f"Консоль EXE: {clean_line}")
                         self.text_for_console.emit(clean_line)
 
-            process.wait()
-            #print(f"Процесс завершен с кодом: {process.returncode}")
+            self.process.wait()
 
         except Exception as e:
             print(f"Критическая ошибка в Worker: {e}")
@@ -468,63 +446,56 @@ class Worker(QObject):
         finally:
             self.finished.emit()
 
-        def stop(self):
-            if self.process:
+    def stop(self):
+        if self.process:
+            try:
                 self.process.kill()
-                self.finished = True
+            except:
+                pass
 
 
 class TableView(QWidget):
-    def __init__(self, data, n,m,title,parent=None):
+    def __init__(self, data, n, m, title, parent=None):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setMinimumSize(800, 600)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)  # Убираем рамки вокруг таблицы
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        rows = m+1
+        rows = m + 1
         cols = n + 1
 
-        step_x = (0 + 3)/(n)
-        step_y = (0 + 1)/(m)
+        step_x = (0 + 3) / n
+        step_y = (0 + 1) / m
 
         self.table = QTableWidget(rows + 1, cols + 1)
 
-
-
         layout.addWidget(self.table)
-        for i in range(n+1):
+        for i in range(n + 1):
             x_val = 0.0 + step_x * i
-            self.table.setItem(0,i+1,QTableWidgetItem(f"{x_val:.3f}"))
+            self.table.setItem(0, i + 1, QTableWidgetItem(f"{x_val:.3f}"))
 
-        for j in range(m,-1,-1):
-            y_val = 1.0 - step_y * (m-j)
-            self.table.setItem(m-j+1,0,QTableWidgetItem(f"{y_val:.3f}"))
-
-
+        for j in range(m, -1, -1):
+            y_val = 1.0 - step_y * (m - j)
+            self.table.setItem(m - j + 1, 0, QTableWidgetItem(f"{y_val:.3f}"))
 
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-
-
-
-        self.table.setItem(0, 0, QTableWidgetItem("yj                   xi"))
+        self.table.setItem(0, 0, QTableWidgetItem("yj                 xi"))
 
         h_labels = [""] + [f"i={i}" for i in range(n + 1)]
         self.table.setHorizontalHeaderLabels(h_labels)
-        h2_labels = [""] + [f"i={j}" for j in range(m ,-1,-1)]
+        h2_labels = [""] + [f"i={j}" for j in range(m, -1, -1)]
         self.table.setVerticalHeaderLabels(h2_labels)
 
-
-        # Основной цикл заполнения данных
         for row_in_table in range(m + 1):
             j_idx = m - row_in_table
             for i_idx in range(n + 1):
                 idx_in_vector = j_idx * (n + 1) + i_idx
 
                 value = data[idx_in_vector]
-                if abs(value)<1e-17:
+                if abs(value) < 1e-17:
                     item = QTableWidgetItem(f"{0:.6g}")
                 else:
                     item = QTableWidgetItem(f"{value:.6g}")
@@ -532,8 +503,8 @@ class TableView(QWidget):
 
         layout.addWidget(self.table)
 
-class SurfaceWindow(QMainWindow):
 
+class SurfaceWindow(QMainWindow):
     def __init__(self, grid, title, a, b, c, d, func_name):
         super().__init__()
 
@@ -556,15 +527,12 @@ class SurfaceWindow(QMainWindow):
         widget.setLayout(layout)
 
         self.setCentralWidget(widget)
-
         self.draw_surface(grid)
 
     def draw_surface(self, grid):
-
         self.plotter.clear()
-        # downsample if grid is too big
         max_points = 200
-        step = max(1, max(grid.shape)//max_points)
+        step = max(1, max(grid.shape) // max_points)
         g = grid[::step, ::step].astype(np.float32)
 
         plate_size = max(self.b - self.a, self.d - self.c)
@@ -583,12 +551,12 @@ class SurfaceWindow(QMainWindow):
 
         self.plotter.add_mesh(
             surf,
-            cmap="plasma",  # "viridis", "plasma", "inferno", "jet", "coolwarm"
+            cmap="plasma",
             smooth_shading=True,
-            show_edges=True,  # ВКЛЮЧАЕТ СЕТКУ
-            edge_color="black",  # Цвет линий сетки
-            line_width=1,  # Толщина линий сетки
-            lighting=True,  # Добавляет объем за счет теней
+            show_edges=True,
+            edge_color="black",
+            line_width=1,
+            lighting=True,
             show_scalar_bar=True
         )
         self.plotter.show_bounds(
@@ -609,11 +577,9 @@ class SurfaceWindow(QMainWindow):
         event.accept()
 
 
-
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     window = MyWindow()
     window.show()
-
 
     sys.exit(app.exec())

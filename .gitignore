@@ -1,1 +1,14 @@
 .vs/
+step-2-MMN/x64/
+step-2-MMN/build/
+x64/
+build/
+*.exe
+*.pdb
+*.ilk
+
+*.bin
+stats.txt
+
+venv/
+.idea/

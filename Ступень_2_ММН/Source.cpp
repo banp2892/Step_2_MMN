@@ -5,6 +5,7 @@
 #include <chrono>
 #include <functional>
 #include <string>
+#include <filesystem>
 #include <fstream>
 #include <vector>
 
@@ -16,10 +17,17 @@
 
 
 void save_to_binary(const std::string& filename, const std::vector<double>& data) {
+    std::filesystem::path filepath(filename);
+    if (filepath.has_parent_path()) {
+        std::filesystem::create_directories(filepath.parent_path());
+    }
     std::ofstream out(filename, std::ios::binary);
     if (out.is_open()) {
         out.write(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(double));
         out.close();
+    }
+    else {
+        std::cerr << "Ошибка: не удалось открыть файл " << filename << " для записи!" << std::endl;
     }
 }
 
@@ -55,7 +63,7 @@ int main(int argc, char* argv[]) {
     double time1 = 0.0, time2 = 0.0;
 
     DirihleVPuassone solver1(a, b, c, d, n, m);
-
+    std::filesystem::create_directories("data");
     if (task_type == 0) {
 
         solver1.prepare_v_and_i_test();
@@ -63,7 +71,7 @@ int main(int argc, char* argv[]) {
         solver1.calculate_r();
         r_0_initial = solver1.get_chebyshov_norma_for_vector(solver1.r);
 
-        save_to_binary("v0_test_numeric.bin", solver1.v);
+        save_to_binary("data/v0_test_numeric.bin", solver1.v);
 
         auto start = std::chrono::high_resolution_clock::now();
         DirihleVPuassone::solver_iterator(solver1, e_max, n_max);
@@ -77,9 +85,9 @@ int main(int argc, char* argv[]) {
         solver1.calculate_delta_u();
         std::vector<double> diff_utest = solver1.calculate_vec_diff(solver1.u, solver1.v);
 
-        save_to_binary("v_test_numeric.bin", solver1.v);
-        save_to_binary("u_test_exact.bin", solver1.u);
-        save_to_binary("uv_test_diff.bin", diff_utest);
+        save_to_binary("data/v_test_numeric.bin", solver1.v);
+        save_to_binary("data/u_test_exact.bin", solver1.u);
+        save_to_binary("data/uv_test_diff.bin", diff_utest);
 
         E_error = solver1.get_test_error(x_max, y_max);
         std::cout << "Время расчета: " << time1 << " сек." << std::endl;
@@ -91,7 +99,7 @@ int main(int argc, char* argv[]) {
         solver1.calculate_r();
         r_0_initial = solver1.get_chebyshov_norma_for_vector(solver1.r);
 
-        save_to_binary("v1_0_main_numeric.bin", solver1.v);
+        save_to_binary("data/v1_0_main_numeric.bin", solver1.v);
 
         auto start1 = std::chrono::high_resolution_clock::now();
         DirihleVPuassone::solver_iterator(solver1, e_max, n_max);
@@ -111,7 +119,7 @@ int main(int argc, char* argv[]) {
 
         std::vector<double> temp_vector_v2 = solver2.reshape_to_half_nodes(solver2.v, n, m);
 
-        save_to_binary("v2_0_main_numeric.bin", temp_vector_v2);
+        save_to_binary("data/v2_0_main_numeric.bin", temp_vector_v2);
 
         auto start2 = std::chrono::high_resolution_clock::now();
         DirihleVPuassone::solver_iterator(solver2, e_max_2, n_max_2);
@@ -124,17 +132,17 @@ int main(int argc, char* argv[]) {
 
         E_error = solver1.compare_with_half_step(solver2, x_max, y_max);
 
-        save_to_binary("v_main_n.bin", solver1.v);
+        save_to_binary("data/v_main_n.bin", solver1.v);
         std::vector<double> v2_subsampled = solver1.get_subsampled_v2(solver2.v, n, m);
-        save_to_binary("v_main_2n_sub.bin", v2_subsampled);
+        save_to_binary("data/v_main_2n_sub.bin", v2_subsampled);
         std::vector<double> diff = solver1.calculate_vec_diff(solver1.v, v2_subsampled);
-        save_to_binary("v_main_diff.bin", diff);
+        save_to_binary("data/v_main_diff.bin", diff);
 
         
         std::cout << "Время 1 (n x m): " << time1 << " сек. " << "Время 2 (2n x 2m): " << time2 << " сек." << std::endl;
     }
 
-    std::ofstream stats("stats.txt", std::ios::app);
+    std::ofstream stats("data/stats.txt", std::ios::app);
     if (stats.is_open()) {
         stats << task_type << " " << n << " " << m << " "
             << total_n << " " << total_e << " " << r_n << " " << r_0_initial << " ";

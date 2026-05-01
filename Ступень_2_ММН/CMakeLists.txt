@@ -6,22 +6,22 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Исходные файлы проекта
+# Указываем пути к исходным файлам с учетом папки src
 set(SOURCES
-    Source.cpp
-    DirihleVPuassone.cpp
+    src/Source.cpp
+    src/DirihleVPuassone.cpp
 )
 
-# Заголовочные файлы
+# Указываем путь к заголовочным файлам с учетом папки header
 set(HEADERS
-    DirihleVPuassone.h
+    header/DirihleVPuassone.h
 )
 
-# Создаем цель с именем calculate, чтобы на выходе получить calculate.exe
+# Создаем цель с именем calculate
 add_executable(calculate ${SOURCES} ${HEADERS})
 
 # Настройка путей к заголовочным файлам
-target_include_directories(calculate PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(calculate PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/header)
 
 # Настройки компилятора
 if(MSVC)

@@ -428,7 +428,7 @@ class Worker(QObject):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                encoding="cp866",
+                encoding="cp1251",
                 shell=True
             )
 

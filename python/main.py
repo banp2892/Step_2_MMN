@@ -6,10 +6,6 @@ import numpy as np
 import pyvista as pv
 from pyvistaqt import QtInteractor
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
-from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout,
-    QHBoxLayout, QLabel, QPushButton, QLineEdit, QGroupBox, QTableWidget, QAbstractItemView, QTableWidgetItem
-)
 from PyQt6 import QtWidgets, uic
 
 def start_exe(exe_name, parameters):
@@ -18,14 +14,21 @@ def start_exe(exe_name, parameters):
 def read_binary(filename, n, m):
     return np.fromfile(filename, dtype=np.float64)
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 class MyWindow(QtWidgets.QDialog):
     def __init__(self):
         super(MyWindow, self).__init__()
         
-        # Получаем абсолютный путь к папке со скриптом, чтобы UI файл всегда находился
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        ui_path = os.path.join(script_dir, 'design.ui')
+
+        ui_path = resource_path('design.ui')
         uic.loadUi(ui_path, self)
 
         self.opened_plots = []
@@ -48,23 +51,23 @@ class MyWindow(QtWidgets.QDialog):
         self.validator()
         self.label_spravka_fill()
 
-
     def closeEvent(self, event):
+        print("--- Сигнал закрытия окна получен! ---")
         if hasattr(self, 'worker') and self.worker:
-            self.worker.stop()
-        if hasattr(self, 'thread') and self.thread.isRunning():
-            self.thread.terminate()
-            self.thread = None
+            self.worker.deactivate()
+        event.accept()
+
+        event.accept()
 
     def view_v_table(self):
         n, m = int(self.n), int(self.m)
         zadacha_type = self.zadacha.currentText().strip()
 
         if zadacha_type == 'Тестовая':
-            filename = 'data/v_test_numeric.bin'
+            filename = 'v_test_numeric.bin'
             title = "Таблица vN(xi,yj) (Тест)"
         else:
-            filename = 'data/v_main_n.bin'
+            filename = 'v_main_n.bin'
             title = "Таблица v1(N)(xi,yj) (Основная)"
         data = read_binary(filename, n, m)
         self.v_win = TableView(data, n, m, title)
@@ -76,10 +79,10 @@ class MyWindow(QtWidgets.QDialog):
         zadacha_type = self.zadacha.currentText().strip()
 
         if zadacha_type == 'Тестовая':
-            filename = 'data/u_test_exact.bin'
+            filename = 'u_test_exact.bin'
             title = "Таблица u(N)(xi,yj)"
         else:
-            filename = 'data/v_main_2n_sub.bin'
+            filename = 'v_main_2n_sub.bin'
             title = "Таблица v2(N2)(x2i,y2j)"
 
         data = read_binary(filename, n, m)
@@ -92,10 +95,10 @@ class MyWindow(QtWidgets.QDialog):
         zadacha_type = self.zadacha.currentText().strip()
 
         if zadacha_type == 'Тестовая':
-            filename = 'data/uv_test_diff.bin'
+            filename = 'uv_test_diff.bin'
             title = "Таблица v(N)(xi,yj) - u(xi,yj)"
         else:
-            filename = 'data/v_main_diff.bin'
+            filename = 'v_main_diff.bin'
             title = "Таблица v(N)(xi,yj) - v(2N)(xi,yj)"
 
         data = read_binary(filename, n, m)
@@ -125,7 +128,7 @@ class MyWindow(QtWidgets.QDialog):
             self.worker.moveToThread(self.thread)
 
             self.thread.started.connect(self.worker.run)
-            self.worker.text_for_console.connect(self.update_console_label)
+            self.worker.data_ready.connect(self.update_console_label)
 
             self.worker.finished.connect(lambda: self.pushButto_start_calculate.setEnabled(True))
             self.worker.finished.connect(self.thread.quit)
@@ -172,7 +175,7 @@ class MyWindow(QtWidgets.QDialog):
 
     def read_results(self):
         try:
-            with open("data/stats.txt", "r") as f:
+            with open("stats.txt", "r") as f:
                 lines = f.readlines()
                 if not lines:
                     return
@@ -286,19 +289,19 @@ class MyWindow(QtWidgets.QDialog):
             grid_n, grid_m = n + 1, m + 1
 
             if mode == 'v':
-                filename = 'data/v_test_numeric.bin' if is_test else 'data/v_main_n.bin'
+                filename = 'v_test_numeric.bin' if is_test else 'v_main_n.bin'
                 title = "График v(N)"
             elif mode == 'u_v2':
-                filename = 'data/u_test_exact.bin' if is_test else 'data/v_main_2n_sub.bin'
+                filename = 'u_test_exact.bin' if is_test else 'v_main_2n_sub.bin'
                 title = "График u(N)" if is_test else "График v(2N)"
             elif mode == 'diff':
-                filename = 'data/uv_test_diff.bin' if is_test else 'data/v_main_diff.bin'
+                filename = 'uv_test_diff.bin' if is_test else 'v_main_diff.bin'
                 title = "График разности"
             elif mode == 'v_0':
-                filename = 'data/v0_test_numeric.bin' if is_test else 'data/v1_0_main_numeric.bin'
+                filename = 'v0_test_numeric.bin' if is_test else 'v1_0_main_numeric.bin'
                 title = "График v(0)(xi,yj)"
             elif mode == 'v2_0':
-                filename = 'data/v2_0_main_numeric.bin'
+                filename = 'v2_0_main_numeric.bin'
                 title = "График v2(0)(x2i,y2j)"
 
             data = read_binary(filename, n, m)
@@ -412,55 +415,71 @@ class MyWindow(QtWidgets.QDialog):
 
 
 class Worker(QObject):
-    text_for_console = pyqtSignal(str)
+    data_ready = pyqtSignal(str)
     finished = pyqtSignal()
 
-    def __init__(self, command_args):
+    def __init__(self, arguments):
+        """
+        :param arguments: Список строк, например ['program.exe', '10', '20']
+        """
         super().__init__()
-        self.command_args = command_args
-        self.process = None  # Инициализация для предотвращения ошибки удаления
+        self.arguments = arguments
+        self.is_success = True
+        self._is_running = True
 
     def run(self):
         try:
-            print(f"Worker начал работу с: {self.command_args}")
             self.process = subprocess.Popen(
-                self.command_args,
+                self.arguments,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                encoding="cp1251",
-                shell=True
+                encoding="cp1251"
             )
 
-            if self.process.stdout:
-                for line in self.process.stdout:
-                    clean_line = line.strip()
-                    if clean_line:
-                        self.text_for_console.emit(clean_line)
-
-            self.process.wait()
+            while self._is_running:
+                output = self.process.stdout.readline()
+                if output == '' and self.process.poll() is not None:
+                    break
+                if output:
+                    # И меняем имя сигнала при отправке текста
+                    self.data_ready.emit(output.strip())
 
         except Exception as e:
-            print(f"Критическая ошибка в Worker: {e}")
-            self.text_for_console.emit(f"Ошибка запуска: {e}")
+            print(f"Ошибка в потоке Worker: {e}")
+            self.is_success = False
         finally:
             self.finished.emit()
 
-    def stop(self):
-        if self.process:
+    def deactivate(self):
+        self._is_running = False
+        self.is_success = False
+
+        if hasattr(self, 'process') and self.process and self.process.poll() is None:
             try:
-                self.process.kill()
-            except:
+                self.process.terminate()  # Посылаем мягкий сигнал закрытия
+                self.process.wait(timeout=0.5)
+            except subprocess.TimeoutExpired:
+                try:
+                    self.process.kill()  # Жесткое уничтожение, если не закрылся сам
+                    self.process.wait()
+                except Exception:
+                    pass
+            except Exception:
                 pass
+            finally:
+                try:
+                    self.process.stdout.close()
+                except Exception:
+                    pass
 
-
-class TableView(QWidget):
+class TableView(QtWidgets.QWidget):
     def __init__(self, data, n, m, title, parent=None):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setMinimumSize(800, 600)
 
-        layout = QVBoxLayout(self)
+        layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
@@ -470,19 +489,19 @@ class TableView(QWidget):
         step_x = (0 + 3) / n
         step_y = (0 + 1) / m
 
-        self.table = QTableWidget(rows + 1, cols + 1)
+        self.table = QtWidgets.QTableWidget(rows + 1, cols + 1)
 
         layout.addWidget(self.table)
         for i in range(n + 1):
             x_val = 0.0 + step_x * i
-            self.table.setItem(0, i + 1, QTableWidgetItem(f"{x_val:.3f}"))
+            self.table.setItem(0, i + 1, QtWidgets.QTableWidgetItem(f"{x_val:.3f}"))
 
         for j in range(m, -1, -1):
             y_val = 1.0 - step_y * (m - j)
-            self.table.setItem(m - j + 1, 0, QTableWidgetItem(f"{y_val:.3f}"))
+            self.table.setItem(m - j + 1, 0, QtWidgets.QTableWidgetItem(f"{y_val:.3f}"))
 
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setItem(0, 0, QTableWidgetItem("yj                 xi"))
+        self.table.setItem(0, 0, QtWidgets.QTableWidgetItem("yj                 xi"))
 
         h_labels = [""] + [f"i={i}" for i in range(n + 1)]
         self.table.setHorizontalHeaderLabels(h_labels)
@@ -496,15 +515,15 @@ class TableView(QWidget):
 
                 value = data[idx_in_vector]
                 if abs(value) < 1e-17:
-                    item = QTableWidgetItem(f"{0:.6g}")
+                    item = QtWidgets.QTableWidgetItem(f"{0:.6g}")
                 else:
-                    item = QTableWidgetItem(f"{value:.6g}")
+                    item = QtWidgets.QTableWidgetItem(f"{value:.6g}")
                 self.table.setItem(row_in_table + 1, i_idx + 1, item)
 
         layout.addWidget(self.table)
 
 
-class SurfaceWindow(QMainWindow):
+class SurfaceWindow(QtWidgets.QMainWindow):
     def __init__(self, grid, title, a, b, c, d, func_name):
         super().__init__()
 
@@ -518,8 +537,8 @@ class SurfaceWindow(QMainWindow):
         self.setWindowTitle(title)
         self.resize(1200, 900)
 
-        widget = QWidget()
-        layout = QVBoxLayout()
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout()
 
         self.plotter = QtInteractor(widget)
 
@@ -569,12 +588,6 @@ class SurfaceWindow(QMainWindow):
         )
         self.plotter.reset_camera()
 
-    def closeEvent(self, event):
-        try:
-            self.plotter.close()
-        except:
-            pass
-        event.accept()
 
 
 if __name__ == "__main__":

@@ -46,6 +46,7 @@ f(x,y) = ch(x-y)
 
 ### Компиляция C++ кода:
 ``` powershell
+cd cpp
 mkdir build
 cd build
 cmake ..

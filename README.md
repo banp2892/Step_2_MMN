@@ -44,7 +44,7 @@ f(x,y) = ch(x-y)
 
 ## Как установить
 
-cpp код:
+Компиляция C++ кода:
 ``` powershell
 mkdir build
 cd build
@@ -53,3 +53,21 @@ cmake --build . --config Release
 
 ```
 В папке build/Release появится calculate.exe, его нужно перенести к main.py? или к питоновскому exe
+
+Установка необходимых файлов main.py:
+``` powershell
+cd python
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python main.py
+```
+
+## Запуск
+В одной папке должны лежать файлы: 
+main.py, design.ui, calculate.exe
+
+``` powershell
+python main.py
+```

@@ -380,5 +380,5 @@ build/
 *.bin
 stats.txt
 
-venv/
+*venv/
 .idea/

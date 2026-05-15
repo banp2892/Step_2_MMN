@@ -175,7 +175,7 @@ class MyWindow(QtWidgets.QDialog):
 
     def read_results(self):
         try:
-            with open("stats.txt", "r") as f:
+            with open("data/stats.txt", "r") as f:
                 lines = f.readlines()
                 if not lines:
                     return
@@ -587,6 +587,10 @@ class SurfaceWindow(QtWidgets.QMainWindow):
             ztitle=f"{self.func_name} * {z_scale:.2e}",
         )
         self.plotter.reset_camera()
+    def closeEvent(self, event):
+        if hasattr(self, 'plotter') and self.plotter:
+            self.plotter.close()
+        event.accept()
 
 
 

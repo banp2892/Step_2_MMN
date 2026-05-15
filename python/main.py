@@ -7,8 +7,8 @@ import pyvista as pv
 from pyvistaqt import QtInteractor
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout,
-    QHBoxLayout, QLabel, QPushButton, QLineEdit, QGroupBox, QTableWidget, QAbstractItemView, QTableWidgetItem
+    QMainWindow, QWidget, QVBoxLayout,
+    QTableWidget, QTableWidgetItem
 )
 from PyQt6 import QtWidgets, uic
 
@@ -18,14 +18,21 @@ def start_exe(exe_name, parameters):
 def read_binary(filename, n, m):
     return np.fromfile(filename, dtype=np.float64)
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 class MyWindow(QtWidgets.QDialog):
     def __init__(self):
         super(MyWindow, self).__init__()
         
-        # Получаем абсолютный путь к папке со скриптом, чтобы UI файл всегда находился
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        ui_path = os.path.join(script_dir, 'design.ui')
+
+        ui_path = resource_path('design.ui')
         uic.loadUi(ui_path, self)
 
         self.opened_plots = []

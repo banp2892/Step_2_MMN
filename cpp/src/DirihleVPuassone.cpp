@@ -15,10 +15,10 @@ DirihleVPuassone::DirihleVPuassone(double a_t, double b_t, double c_t, double d_
 
 	int total_nodes = (n + 1) * (m + 1);
 
-	v.assign(total_nodes, 0.0); // вектор v заполняем нулями
-	r.assign(total_nodes, 0.0); // вектор невязок r заполняем нулями
-	Ar.assign(total_nodes, 0.0); // вектор произведение Ar заполняем нулями
-	f_grid.assign(total_nodes, 0.0); // правая часть f_grid заполняем нулями
+	v.assign(total_nodes, 0.0); // РІРµРєС‚РѕСЂ v Р·Р°РїРѕР»РЅСЏРµРј РЅСѓР»СЏРјРё
+	r.assign(total_nodes, 0.0); // РІРµРєС‚РѕСЂ РЅРµРІСЏР·РѕРє r Р·Р°РїРѕР»РЅСЏРµРј РЅСѓР»СЏРјРё
+	Ar.assign(total_nodes, 0.0); // РІРµРєС‚РѕСЂ РїСЂРѕРёР·РІРµРґРµРЅРёРµ Ar Р·Р°РїРѕР»РЅСЏРµРј РЅСѓР»СЏРјРё
+	f_grid.assign(total_nodes, 0.0); // РїСЂР°РІР°СЏ С‡Р°СЃС‚СЊ f_grid Р·Р°РїРѕР»РЅСЏРµРј РЅСѓР»СЏРјРё
 	u.assign(total_nodes, 0.0);
 	v2.assign(total_nodes, 0.0);
 	diff_v_and_u.assign(total_nodes, 0.0);
@@ -68,7 +68,7 @@ void DirihleVPuassone::choosing_approximation(StartApproximation type) {
 
     switch (type) {
         case AVERAGE: {
-			std::cout << "Выбрано AVERAGE" << std::endl;
+			std::cout << "Р’С‹Р±СЂР°РЅРѕ AVERAGE" << std::endl;
             double sum = 0.0;
             for (int i = 0; i <= n; ++i) {
                 sum += v[0 * cols + i];
@@ -88,7 +88,7 @@ void DirihleVPuassone::choosing_approximation(StartApproximation type) {
         }
 
         case INTERP_X:
-			std::cout << "Выбрано INTERP_X" << std::endl;
+			std::cout << "Р’С‹Р±СЂР°РЅРѕ INTERP_X" << std::endl;
             for (int j = 1; j < m; ++j) {
                 double left = v[j * cols + 0];
                 double right = v[j * cols + n];
@@ -99,7 +99,7 @@ void DirihleVPuassone::choosing_approximation(StartApproximation type) {
             break;
 
         case INTERP_Y:
-			std::cout << "Выбрано INTERP_Y" << std::endl;
+			std::cout << "Р’С‹Р±СЂР°РЅРѕ INTERP_Y" << std::endl;
             for (int i = 1; i < n; ++i) {
                 double bottom = v[0 * cols + i];
                 double top = v[m * cols + i];
@@ -110,7 +110,7 @@ void DirihleVPuassone::choosing_approximation(StartApproximation type) {
             break;
 
         case ZERO:
-			std::cout << "Выбрано ZERO" << std::endl;
+			std::cout << "Р’С‹Р±СЂР°РЅРѕ ZERO" << std::endl;
         default:
             for (int j = 1; j < m; ++j)
                 for (int i = 1; i < n; ++i)
@@ -275,7 +275,7 @@ std::vector<double> DirihleVPuassone::calculate_vec_diff(const std::vector<doubl
 	
 	if (v1.size() != v2.size()) {
 		
-		std::cout << "Ошибка, размеры векторов при сравнении разные: v1.size() = " << v1.size() << ", v2.size() = " << v2.size() << std::endl;
+		std::cout << "РћС€РёР±РєР°, СЂР°Р·РјРµСЂС‹ РІРµРєС‚РѕСЂРѕРІ РїСЂРё СЃСЂР°РІРЅРµРЅРёРё СЂР°Р·РЅС‹Рµ: v1.size() = " << v1.size() << ", v2.size() = " << v2.size() << std::endl;
 		return std::vector<double>(0);
 	}
 
@@ -343,8 +343,8 @@ std::vector<double> DirihleVPuassone::reshape_to_half_nodes(const std::vector<do
 	return result;
 }
 void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limit, int n_max) {
-	double current_residual = 1e10; // Невязка ||R||
-	double current_delta_v = 1e10;  // Приращение ||v_new - v_old||
+	double current_residual = 1e10; // РќРµРІСЏР·РєР° ||R||
+	double current_delta_v = 1e10;  // РџСЂРёСЂР°С‰РµРЅРёРµ ||v_new - v_old||
 	int current_iter = 0;
 	const int total = (solver.n + 1) * (solver.m + 1);
 
@@ -355,7 +355,7 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 
 #pragma omp parallel shared(current_residual, current_delta_v, current_iter) firstprivate(eps_limit, n_max)
 	{
-		// ВАЖНО: Условие проверяется всеми, но обновляется внутри barrier
+		// Р’РђР–РќРћ: РЈСЃР»РѕРІРёРµ РїСЂРѕРІРµСЂСЏРµС‚СЃСЏ РІСЃРµРјРё, РЅРѕ РѕР±РЅРѕРІР»СЏРµС‚СЃСЏ РІРЅСѓС‚СЂРё barrier
 		while (current_delta_v > eps_limit && current_iter < n_max) {
 
 			solver.calculate_r();
@@ -376,7 +376,7 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 				l_ar_ar += ar_p[i] * ar_p[i];
 			}
 
-			// Вычисляем шаг tau
+			// Р’С‹С‡РёСЃР»СЏРµРј С€Р°Рі tau
 			double tau_local = l_ar_r / (l_ar_ar + 1e-25);
 			double* v_p = solver.v.data();
 
@@ -386,10 +386,10 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 				l_max_delta = 0.0;
 			}
 
-			// Обновляем решение И считаем сразу две нормы
+			// РћР±РЅРѕРІР»СЏРµРј СЂРµС€РµРЅРёРµ Р СЃС‡РёС‚Р°РµРј СЃСЂР°Р·Сѓ РґРІРµ РЅРѕСЂРјС‹
 #pragma omp for reduction(max:l_max_r, l_max_delta)
 			for (int i = 0; i < total; i++) {
-				double delta = tau_local * r_p[i]; // На сколько изменилось решение
+				double delta = tau_local * r_p[i]; // РќР° СЃРєРѕР»СЊРєРѕ РёР·РјРµРЅРёР»РѕСЃСЊ СЂРµС€РµРЅРёРµ
 				v_p[i] -= delta;
 
 				double abs_r = std::fabs(r_p[i]);
@@ -415,8 +415,8 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 	}
 
 	solver.last_iterations = current_iter;
-	solver.r_n = current_residual; // Сохраняем невязку
-	solver.final_eps = current_delta_v; // Сохраняем ПРИРАЩЕНИЕ (точность метода)
+	solver.r_n = current_residual; // РЎРѕС…СЂР°РЅСЏРµРј РЅРµРІСЏР·РєСѓ
+	solver.final_eps = current_delta_v; // РЎРѕС…СЂР°РЅСЏРµРј РџР РР РђР©Р•РќРР• (С‚РѕС‡РЅРѕСЃС‚СЊ РјРµС‚РѕРґР°)
 
 	std::cout << "--------------------------------------------------" << std::endl;
 	std::cout << "FINISH: " << current_iter << " iterations." << std::endl;
@@ -468,7 +468,7 @@ void DirihleVPuassone::prepare_v_and_i_main()
 	int m_h = solver_high.m;
 
 	if (n_h != 2 * n_l || m_h != 2 * m_l) {
-		std::cerr << "Ошибка: сетки не кратны 2! Сравнение невозможно." << std::endl;
+		std::cerr << "РћС€РёР±РєР°: СЃРµС‚РєРё РЅРµ РєСЂР°С‚РЅС‹ 2! РЎСЂР°РІРЅРµРЅРёРµ РЅРµРІРѕР·РјРѕР¶РЅРѕ." << std::endl;
 		return -1.0;
 	}
 
@@ -505,7 +505,7 @@ void DirihleVPuassone::prepare_v_and_i_main()
 			 double x = a + i * h;
 			 int idx = j * (n + 1) + i;
 
-			 // Используем аналитическое решение u*(x,y)
+			 // РСЃРїРѕР»СЊР·СѓРµРј Р°РЅР°Р»РёС‚РёС‡РµСЃРєРѕРµ СЂРµС€РµРЅРёРµ u*(x,y)
 			 double u_exact = delta_u(x, y);
 			 double current_diff = std::abs(u_exact - v[idx]);
 
@@ -525,7 +525,7 @@ void DirihleVPuassone::prepare_v_and_i_main()
 	 max_x = a;
 	 max_y = c;
 
-	 // solver_high должна иметь n_h = 2*n, m_h = 2*m
+	 // solver_high РґРѕР»Р¶РЅР° РёРјРµС‚СЊ n_h = 2*n, m_h = 2*m
 	 for (int j = 0; j <= m; j++) {
 		 double y = c + j * k;
 		 for (int i = 0; i <= n; i++) {

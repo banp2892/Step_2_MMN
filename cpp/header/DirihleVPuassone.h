@@ -17,14 +17,14 @@ public:
 	double h = 0.0, k = 0.0;
 	double inv_h2 = 0.0, inv_k2 = 0.0;
 	double tau = 0.0;
-	int last_iterations = 0; // количество итераций
-	double final_eps = 0.0; // достигнутая точность
-	double r_0 = 0.0; // начальная невязка
-	double r_n = 0.0; // невязка в конце
+	int last_iterations = 0; // РєРѕР»РёС‡РµСЃС‚РІРѕ РёС‚РµСЂР°С†РёР№
+	double final_eps = 0.0; // РґРѕСЃС‚РёРіРЅСѓС‚Р°СЏ С‚РѕС‡РЅРѕСЃС‚СЊ
+	double r_0 = 0.0; // РЅР°С‡Р°Р»СЊРЅР°СЏ РЅРµРІСЏР·РєР°
+	double r_n = 0.0; // РЅРµРІСЏР·РєР° РІ РєРѕРЅС†Рµ
 
 
-	double error = 1e10; // начальная ошибка
-	int iter = 0; // начальное число итераций
+	double error = 1e10; // РЅР°С‡Р°Р»СЊРЅР°СЏ РѕС€РёР±РєР°
+	int iter = 0; // РЅР°С‡Р°Р»СЊРЅРѕРµ С‡РёСЃР»Рѕ РёС‚РµСЂР°С†РёР№
 
 	std::vector<double> v;
 	std::vector<double> r;
@@ -32,8 +32,8 @@ public:
 	std::vector<double> f_grid;
 
 
-	std::vector<double> u; // точное решение тестовой задачи
-	std::vector<double> v2; // удвоенная сетка для основной задачи
+	std::vector<double> u; // С‚РѕС‡РЅРѕРµ СЂРµС€РµРЅРёРµ С‚РµСЃС‚РѕРІРѕР№ Р·Р°РґР°С‡Рё
+	std::vector<double> v2; // СѓРґРІРѕРµРЅРЅР°СЏ СЃРµС‚РєР° РґР»СЏ РѕСЃРЅРѕРІРЅРѕР№ Р·Р°РґР°С‡Рё
 	std::vector<double> diff_v_and_u;
 	
 	
@@ -43,10 +43,10 @@ public:
 	void prepare_v_and_i_test();
 
 
-	double Nu1_main(double y); // левая граница sin^2(pi*y)
-	double Nu2_main(double y); // правая граница 0
-	double Nu3_main(double x); // нижняя гранция ch(x^2-3x)-1
-	double Nu4_main(double x); // верхняя граница 0
+	double Nu1_main(double y); // Р»РµРІР°СЏ РіСЂР°РЅРёС†Р° sin^2(pi*y)
+	double Nu2_main(double y); // РїСЂР°РІР°СЏ РіСЂР°РЅРёС†Р° 0
+	double Nu3_main(double x); // РЅРёР¶РЅСЏСЏ РіСЂР°РЅС†РёСЏ ch(x^2-3x)-1
+	double Nu4_main(double x); // РІРµСЂС…РЅСЏСЏ РіСЂР°РЅРёС†Р° 0
 
 	double delta_u(double x, double y); // sin^2(x*y^2)
 	double f_main(double x, double y); // ch(x-y)
@@ -60,7 +60,7 @@ public:
 
 	double compare_with_half_step(const DirihleVPuassone& solver_high, double& max_x, double& max_y);
 
-	double get_chebyshov_norma_for_vector(const std::vector<double>& v1); // считаем норму невязки по чебышеву на текщем шаге
+	double get_chebyshov_norma_for_vector(const std::vector<double>& v1); // СЃС‡РёС‚Р°РµРј РЅРѕСЂРјСѓ РЅРµРІСЏР·РєРё РїРѕ С‡РµР±С‹С€РµРІСѓ РЅР° С‚РµРєС‰РµРј С€Р°РіРµ
 
 	double get_evklid_norma_for_vector(const std::vector<double>& v1);
 
@@ -74,7 +74,7 @@ public:
 
 
 
-	void choosing_approximation(StartApproximation type); ///> выбираем начальное приближение
+	void choosing_approximation(StartApproximation type); ///> РІС‹Р±РёСЂР°РµРј РЅР°С‡Р°Р»СЊРЅРѕРµ РїСЂРёР±Р»РёР¶РµРЅРёРµ
 
 
 	// MMN 

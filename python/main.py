@@ -64,10 +64,10 @@ class MyWindow(QtWidgets.QDialog):
         zadacha_type = self.zadacha.currentText().strip()
 
         if zadacha_type == 'Тестовая':
-            filename = 'v_test_numeric.bin'
+            filename = 'data/v_test_numeric.bin'
             title = "Таблица vN(xi,yj) (Тест)"
         else:
-            filename = 'v_main_n.bin'
+            filename = 'data/v_main_n.bin'
             title = "Таблица v1(N)(xi,yj) (Основная)"
         data = read_binary(filename, n, m)
         self.v_win = TableView(data, n, m, title)
@@ -79,10 +79,10 @@ class MyWindow(QtWidgets.QDialog):
         zadacha_type = self.zadacha.currentText().strip()
 
         if zadacha_type == 'Тестовая':
-            filename = 'u_test_exact.bin'
+            filename = 'data/u_test_exact.bin'
             title = "Таблица u(N)(xi,yj)"
         else:
-            filename = 'v_main_2n_sub.bin'
+            filename = 'data/v_main_2n_sub.bin'
             title = "Таблица v2(N2)(x2i,y2j)"
 
         data = read_binary(filename, n, m)
@@ -95,10 +95,10 @@ class MyWindow(QtWidgets.QDialog):
         zadacha_type = self.zadacha.currentText().strip()
 
         if zadacha_type == 'Тестовая':
-            filename = 'uv_test_diff.bin'
+            filename = 'data/uv_test_diff.bin'
             title = "Таблица v(N)(xi,yj) - u(xi,yj)"
         else:
-            filename = 'v_main_diff.bin'
+            filename = 'data/v_main_diff.bin'
             title = "Таблица v(N)(xi,yj) - v(2N)(xi,yj)"
 
         data = read_binary(filename, n, m)
@@ -289,19 +289,19 @@ class MyWindow(QtWidgets.QDialog):
             grid_n, grid_m = n + 1, m + 1
 
             if mode == 'v':
-                filename = 'v_test_numeric.bin' if is_test else 'v_main_n.bin'
+                filename = 'data/v_test_numeric.bin' if is_test else 'data/v_main_n.bin'
                 title = "График v(N)"
             elif mode == 'u_v2':
-                filename = 'u_test_exact.bin' if is_test else 'v_main_2n_sub.bin'
+                filename = 'data/u_test_exact.bin' if is_test else 'data/v_main_2n_sub.bin'
                 title = "График u(N)" if is_test else "График v(2N)"
             elif mode == 'diff':
-                filename = 'uv_test_diff.bin' if is_test else 'v_main_diff.bin'
+                filename = 'data/uv_test_diff.bin' if is_test else 'data/v_main_diff.bin'
                 title = "График разности"
             elif mode == 'v_0':
-                filename = 'v0_test_numeric.bin' if is_test else 'v1_0_main_numeric.bin'
+                filename = 'data/v0_test_numeric.bin' if is_test else 'data/v1_0_main_numeric.bin'
                 title = "График v(0)(xi,yj)"
             elif mode == 'v2_0':
-                filename = 'v2_0_main_numeric.bin'
+                filename = 'data/v2_0_main_numeric.bin'
                 title = "График v2(0)(x2i,y2j)"
 
             data = read_binary(filename, n, m)

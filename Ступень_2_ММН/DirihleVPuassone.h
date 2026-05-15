@@ -82,6 +82,7 @@ public:
 
 
 	void calculate_Ar();
+	void calculate_Ar_TBB();
 	void calculate_r();
 
 	double calculate_epsilon1();

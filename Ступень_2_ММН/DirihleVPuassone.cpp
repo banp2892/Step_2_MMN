@@ -2,6 +2,11 @@
 #include <math.h>
 #include <iostream>
 
+#include <tbb/tbb.h> // Подключает основные компоненты (параллельные циклы, контейнеры)
+// Или более точечно, чтобы не тянуть лишнее:
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range2d.h>
+#include <tbb/global_control.h> // Если захотите ограничить число потоков
 
 DirihleVPuassone::DirihleVPuassone(double a_t, double b_t, double c_t, double d_t, int n_t, int m_t)
 	: a(a_t), b(b_t), c(c_t), d(d_t), n(n_t), m(m_t)
@@ -195,20 +200,23 @@ double DirihleVPuassone::Nu4_test(double x)
 
 
 
-void DirihleVPuassone::calculate_Ar() {
+void DirihleVPuassone::calculate_Ar_TBB() {
 	const int row_step = n + 1;
 	const double c_coeff = 2.0 * (inv_h2 + inv_k2);
 	double* __restrict ar_ptr = Ar.data();
 	const double* __restrict r_ptr = r.data();
-#pragma omp for
-	for (int j = 1; j < m; j++) {
-		int row = j * row_step;
-		for (int i = 1; i < n; i++) {
-			ar_ptr[row + i] = c_coeff * r_ptr[row + i]
-				- inv_h2 * (r_ptr[row + i - 1] + r_ptr[row + i + 1])
-				- inv_k2 * (r_ptr[row - row_step + i] + r_ptr[row + row_step + i]);
-		}
-	}
+
+	tbb::parallel_for(tbb::blocked_range2d<int>(1, m, 1, n),
+		[=](const tbb::blocked_range2d<int>& range) {
+			for (int j = range.rows().begin(); j < range.rows().end(); ++j) {
+				int row = j * row_step;
+				for (int i = range.cols().begin(); i < range.cols().end(); ++i) {
+					ar_ptr[row + i] = c_coeff * r_ptr[row + i]
+						- inv_h2 * (r_ptr[row + i - 1] + r_ptr[row + i + 1])
+						- inv_k2 * (r_ptr[row - row_step + i] + r_ptr[row + row_step + i]);
+				}
+			}
+		});
 }
 
 void DirihleVPuassone::calculate_r() {
@@ -356,10 +364,10 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 #pragma omp parallel shared(current_residual, current_delta_v, current_iter) firstprivate(eps_limit, n_max)
 	{
 		// ВАЖНО: Условие проверяется всеми, но обновляется внутри barrier
-		while (current_delta_v > eps_limit && current_iter < n_max) {
+		while (current_delta_v > eps_limit && current_iter < n_max) { 
 
 			solver.calculate_r();
-			solver.calculate_Ar();
+			solver.calculate_Ar_TBB();
 
 #pragma omp single
 			{

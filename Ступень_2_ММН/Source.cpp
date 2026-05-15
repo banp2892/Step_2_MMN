@@ -136,6 +136,7 @@ int main(int argc, char* argv[]) {
 
     std::ofstream stats("stats.txt", std::ios::app);
     if (stats.is_open()) {
+        stats << std::fixed << std::setprecision(5);
         stats << task_type << " " << n << " " << m << " "
             << total_n << " " << total_e << " " << r_n << " " << r_0_initial << " ";
 

@@ -36,6 +36,8 @@ int main(int argc, char* argv[]) {
 
     if (argc < 11) {
         std::cerr << "Недостаточно аргументов!" << std::endl;
+        std::cerr << "пример ввода для ТЕСТОВОЙ задачи: calculate.exe 0.0 3.0 0.0 1.0 100 100 1e-9 500000 0 1 1e-9 500000" << std::endl;
+        std::cerr << "пример ввода для ОСНОВНОЙ задачи: calculate.exe 0.0 3.0 0.0 1.0 100 100 1e-9 500000 1 1 1e-9 500000" << std::endl;
         return 1;
     }
 

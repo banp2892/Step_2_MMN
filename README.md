@@ -44,7 +44,7 @@ f(x,y) = ch(x-y)
 
 ## Как установить
 
-Компиляция C++ кода:
+### Компиляция C++ кода:
 ``` powershell
 mkdir build
 cd build
@@ -52,9 +52,9 @@ cmake ..
 cmake --build . --config Release
 
 ```
-В папке build/Release появится calculate.exe, его нужно перенести к main.py? или к питоновскому exe
+В папке build/Release появится calculate.exe, этот .exe нужно перенести в папку, где лежит maim.py
 
-Установка необходимых файлов main.py:
+### Установка необходимых файлов main.py:
 ``` powershell
 cd python
 python -m venv .venv

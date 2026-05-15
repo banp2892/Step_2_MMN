@@ -6,10 +6,6 @@ import numpy as np
 import pyvista as pv
 from pyvistaqt import QtInteractor
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
-from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout,
-    QTableWidget, QTableWidgetItem
-)
 from PyQt6 import QtWidgets, uic
 
 def start_exe(exe_name, parameters):
@@ -477,13 +473,13 @@ class Worker(QObject):
                 except Exception:
                     pass
 
-class TableView(QWidget):
+class TableView(QtWidgets.QWidget):
     def __init__(self, data, n, m, title, parent=None):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setMinimumSize(800, 600)
 
-        layout = QVBoxLayout(self)
+        layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
@@ -493,19 +489,19 @@ class TableView(QWidget):
         step_x = (0 + 3) / n
         step_y = (0 + 1) / m
 
-        self.table = QTableWidget(rows + 1, cols + 1)
+        self.table = QtWidgets.QTableWidget(rows + 1, cols + 1)
 
         layout.addWidget(self.table)
         for i in range(n + 1):
             x_val = 0.0 + step_x * i
-            self.table.setItem(0, i + 1, QTableWidgetItem(f"{x_val:.3f}"))
+            self.table.setItem(0, i + 1, QtWidgets.QTableWidgetItem(f"{x_val:.3f}"))
 
         for j in range(m, -1, -1):
             y_val = 1.0 - step_y * (m - j)
-            self.table.setItem(m - j + 1, 0, QTableWidgetItem(f"{y_val:.3f}"))
+            self.table.setItem(m - j + 1, 0, QtWidgets.QTableWidgetItem(f"{y_val:.3f}"))
 
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setItem(0, 0, QTableWidgetItem("yj                 xi"))
+        self.table.setItem(0, 0, QtWidgets.QTableWidgetItem("yj                 xi"))
 
         h_labels = [""] + [f"i={i}" for i in range(n + 1)]
         self.table.setHorizontalHeaderLabels(h_labels)
@@ -519,15 +515,15 @@ class TableView(QWidget):
 
                 value = data[idx_in_vector]
                 if abs(value) < 1e-17:
-                    item = QTableWidgetItem(f"{0:.6g}")
+                    item = QtWidgets.QTableWidgetItem(f"{0:.6g}")
                 else:
-                    item = QTableWidgetItem(f"{value:.6g}")
+                    item = QtWidgets.QTableWidgetItem(f"{value:.6g}")
                 self.table.setItem(row_in_table + 1, i_idx + 1, item)
 
         layout.addWidget(self.table)
 
 
-class SurfaceWindow(QMainWindow):
+class SurfaceWindow(QtWidgets.QMainWindow):
     def __init__(self, grid, title, a, b, c, d, func_name):
         super().__init__()
 
@@ -541,8 +537,8 @@ class SurfaceWindow(QMainWindow):
         self.setWindowTitle(title)
         self.resize(1200, 900)
 
-        widget = QWidget()
-        layout = QVBoxLayout()
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout()
 
         self.plotter = QtInteractor(widget)
 

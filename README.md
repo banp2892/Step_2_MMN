@@ -43,4 +43,13 @@ f(x,y) = ch(x-y)
 
 
 ## Как установить
-... добавить смейк, добавить последовательность комманд
+
+cpp код:
+``` powershell
+mkdir build
+cd build
+cmake ..
+cmake --build . --config Release
+
+```
+В папке build/Release появится calculate.exe, его нужно перенести к main.py? или к питоновскому exe

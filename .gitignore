@@ -361,3 +361,24 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+build/
+.vs/
+.cmake/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo.vs/
+step-2-MMN/x64/
+step-2-MMN/build/
+x64/
+build/
+*.pdb
+*.ilk
+
+*.bin
+stats.txt
+
+venv/
+.idea/

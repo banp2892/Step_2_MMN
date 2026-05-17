@@ -342,79 +342,88 @@ std::vector<double> DirihleVPuassone::reshape_to_half_nodes(const std::vector<do
 	}
 	return result;
 }
-void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limit, int n_max) {
-	double current_residual = 1e10; // Невязка ||R||
-	double current_delta_v = 1e10;  // Приращение ||v_new - v_old||
-	int current_iter = 0;
-	const int total = (solver.n + 1) * (solver.m + 1);
 
-	double g_ar_r = 0, g_ar_ar = 0;
-	double l_ar_r = 0, l_ar_ar = 0;
-	double l_max_r = 0;
-	double l_max_delta = 0;
+void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limit, int n_max) {
+    double current_residual = 1e10; // Невязка ||R||
+    double current_delta_v = 1e10;  // Приращение ||v_new - v_old||
+    int current_iter = 0;
+    const int total = (solver.n + 1) * (solver.m + 1);
+
+    double l_ar_r = 0, l_ar_ar = 0;
+    double l_max_r = 0;
+    double l_max_delta = 0;
+
+    solver.calculate_r();
+    solver.calculate_Ar();
 
 #pragma omp parallel shared(current_residual, current_delta_v, current_iter) firstprivate(eps_limit, n_max)
-	{
-		// ВАЖНО: Условие проверяется всеми, но обновляется внутри barrier
-		while (current_delta_v > eps_limit && current_iter < n_max) {
-
-			solver.calculate_r();
-			solver.calculate_Ar();
-
+    {
+        while (current_delta_v > eps_limit && current_iter < n_max) {
+            
 #pragma omp single
-			{
-				l_ar_r = 0.0;
-				l_ar_ar = 0.0;
-			}
+            {
+                l_ar_r = 0.0;
+                l_ar_ar = 0.0;
+            }
 
-			const double* ar_p = solver.Ar.data();
-			const double* r_p = solver.r.data();
+            const double* ar_p = solver.Ar.data();
+            double* r_p = solver.r.data();
 
+            // Скалярные произведения для вычисления tau_s
 #pragma omp for reduction(+:l_ar_r, l_ar_ar)
-			for (int i = 0; i < total; i++) {
-				l_ar_r += ar_p[i] * r_p[i];
-				l_ar_ar += ar_p[i] * ar_p[i];
-			}
+            for (int i = 0; i < total; i++) {
+                l_ar_r += ar_p[i] * r_p[i];
+                l_ar_ar += ar_p[i] * ar_p[i];
+            }
 
-			// Вычисляем шаг tau
-			double tau_local = l_ar_r / (l_ar_ar + 1e-25);
-			double* v_p = solver.v.data();
+            double tau_local = l_ar_r / (l_ar_ar + 1e-25);
+            double* v_p = solver.v.data();
 
 #pragma omp single
-			{
-				l_max_r = 0.0;
-				l_max_delta = 0.0;
-			}
+            {
+                l_max_r = 0.0;
+                l_max_delta = 0.0;
+            }
 
-			// Обновляем решение И считаем сразу две нормы
 #pragma omp for reduction(max:l_max_r, l_max_delta)
-			for (int i = 0; i < total; i++) {
-				double delta = tau_local * r_p[i]; // На сколько изменилось решение
-				v_p[i] -= delta;
+            for (int i = 0; i < total; i++) {
+                double delta = tau_local * r_p[i]; 
+                v_p[i] -= delta;
 
-				double abs_r = std::fabs(r_p[i]);
-				double abs_d = std::fabs(delta);
+                // Математическая оптимизация невязки: R^(s+1) = R^(s) - tau * AR^(s)
+                r_p[i] -= tau_local * ar_p[i]; 
 
-				if (abs_r > l_max_r) l_max_r = abs_r;
-				if (abs_d > l_max_delta) l_max_delta = abs_d;
-			}
+                double abs_r = std::fabs(r_p[i]);
+                double abs_d = std::fabs(delta);
+
+                if (abs_r > l_max_r) l_max_r = abs_r;
+                if (abs_d > l_max_delta) l_max_delta = abs_d;
+            }
 
 #pragma omp single
-			{
-				current_residual = l_max_r;
-				current_delta_v = l_max_delta;
-				current_iter++;
+            {
+                current_residual = l_max_r;
+                current_delta_v = l_max_delta;
+                current_iter++;
+            }
 
-				if (current_iter % 5000 == 0) {
-					std::cout << "Iter: " << current_iter
-						<< " | Max Delta: " << std::scientific << current_delta_v << std::endl;
-				}
-			}
-			
-		}
-	}
 
-	solver.last_iterations = current_iter;
+            // if (current_iter % 100 == 0) {
+            //     solver.calculate_r(); 
+            // }
+            solver.calculate_Ar();
+
+#pragma omp single
+            {
+                if (current_iter % 5000 == 0) {
+                    std::cout << "ITER: " << current_iter
+                        << " |max|v(s+1)-v(s)| : " << std::scientific << current_delta_v << std::endl;
+                }
+            }
+        }
+    }
+
+    solver.last_iterations = current_iter;
 	solver.r_n = current_residual; // Сохраняем невязку
 	solver.final_eps = current_delta_v; // Сохраняем ПРИРАЩЕНИЕ (точность метода)
 
@@ -424,7 +433,6 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 	std::cout << "Final eps: " << current_delta_v << std::endl;
 	std::cout << "--------------------------------------------------" << std::endl;
 }
-
 
 void DirihleVPuassone::calculate_f_grid_main()
 {

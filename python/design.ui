@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Задача Дирихле для уравнения Пуассона. Ступень 2. ММГ. Выполнил Черных Севастьян 3823Б1ПМоп3, команда №2 'Ромашки'</string>
   </property>
   <widget class="QGroupBox" name="parametr_box">
    <property name="geometry">

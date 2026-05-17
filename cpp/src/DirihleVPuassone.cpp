@@ -68,7 +68,7 @@ void DirihleVPuassone::choosing_approximation(StartApproximation type) {
 
     switch (type) {
         case AVERAGE: {
-			std::cout << "Выбрано AVERAGE" << std::endl;
+			std::cout << "approximation AVERAGE" << std::endl;
             double sum = 0.0;
             for (int i = 0; i <= n; ++i) {
                 sum += v[0 * cols + i];
@@ -88,7 +88,7 @@ void DirihleVPuassone::choosing_approximation(StartApproximation type) {
         }
 
         case INTERP_X:
-			std::cout << "Выбрано INTERP_X" << std::endl;
+			std::cout << "approximation INTERP_X" << std::endl;
             for (int j = 1; j < m; ++j) {
                 double left = v[j * cols + 0];
                 double right = v[j * cols + n];
@@ -99,7 +99,7 @@ void DirihleVPuassone::choosing_approximation(StartApproximation type) {
             break;
 
         case INTERP_Y:
-			std::cout << "Выбрано INTERP_Y" << std::endl;
+			std::cout << "approximation INTERP_Y" << std::endl;
             for (int i = 1; i < n; ++i) {
                 double bottom = v[0 * cols + i];
                 double top = v[m * cols + i];
@@ -110,7 +110,7 @@ void DirihleVPuassone::choosing_approximation(StartApproximation type) {
             break;
 
         case ZERO:
-			std::cout << "Выбрано ZERO" << std::endl;
+			std::cout << "approximation ZERO" << std::endl;
         default:
             for (int j = 1; j < m; ++j)
                 for (int i = 1; i < n; ++i)
@@ -416,7 +416,7 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 #pragma omp single
             {
                 if (current_iter % 5000 == 0) {
-                    std::cout << "ITER: " << current_iter
+                    std::cout << "Num. Iteration: " << current_iter
                         << " |max|v(s+1)-v(s)| : " << std::scientific << current_delta_v << std::endl;
                 }
             }

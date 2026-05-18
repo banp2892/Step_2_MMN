@@ -344,14 +344,16 @@ std::vector<double> DirihleVPuassone::reshape_to_half_nodes(const std::vector<do
 }
 
 void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limit, int n_max) {
-    double current_residual = 1e10; // Невязка ||R||
-    double current_delta_v = 1e10;  // Приращение ||v_new - v_old||
+    double current_residual = 1e10; // Невязка ||R||_2
+    double current_delta_v = 1e10;  // Приращение ||v_new - v_old||_2
     int current_iter = 0;
     const int total = (solver.n + 1) * (solver.m + 1);
 
     double l_ar_r = 0, l_ar_ar = 0;
-    double l_max_r = 0;
-    double l_max_delta = 0;
+    
+    // Переменные для Евклидовой нормы (вместо максов)
+    double l_sum_sq_r = 0.0;
+    double l_sum_sq_delta = 0.0;
 
     solver.calculate_r();
     solver.calculate_Ar();
@@ -369,7 +371,7 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
             const double* ar_p = solver.Ar.data();
             double* r_p = solver.r.data();
 
-            // Скалярные произведения для вычисления tau_s
+            // Скалярные произведения для вычисления tau_s (это Евклидова база ММН, тут всё ок)
 #pragma omp for reduction(+:l_ar_r, l_ar_ar)
             for (int i = 0; i < total; i++) {
                 l_ar_r += ar_p[i] * r_p[i];
@@ -381,57 +383,54 @@ void DirihleVPuassone::solver_iterator(DirihleVPuassone& solver, double eps_limi
 
 #pragma omp single
             {
-                l_max_r = 0.0;
-                l_max_delta = 0.0;
+                // Сбрасываем сумматоры квадратов перед новой итерацией
+                l_sum_sq_r = 0.0;
+                l_sum_sq_delta = 0.0;
             }
 
-#pragma omp for reduction(max:l_max_r, l_max_delta)
+            // Раньше тут был reduction(max:...), теперь считаем сумму квадратов
+#pragma omp for reduction(+:l_sum_sq_r, l_sum_sq_delta)
             for (int i = 0; i < total; i++) {
                 double delta = tau_local * r_p[i]; 
                 v_p[i] -= delta;
 
-                // Математическая оптимизация невязки: R^(s+1) = R^(s) - tau * AR^(s)
+                // Корректируем невязку: R^(s+1) = R^(s) - tau * AR^(s)
                 r_p[i] -= tau_local * ar_p[i]; 
 
-                double abs_r = std::fabs(r_p[i]);
-                double abs_d = std::fabs(delta);
-
-                if (abs_r > l_max_r) l_max_r = abs_r;
-                if (abs_d > l_max_delta) l_max_delta = abs_d;
+                // Накапливаем квадраты для Евклидовой нормы
+                l_sum_sq_r += r_p[i] * r_p[i];
+                l_sum_sq_delta += delta * delta;
             }
 
 #pragma omp single
             {
-                current_residual = l_max_r;
-                current_delta_v = l_max_delta;
+                // Извлекаем корни — теперь это честные Евклидовы нормы
+                current_residual = std::sqrt(l_sum_sq_r);
+                current_delta_v = std::sqrt(l_sum_sq_delta);
                 current_iter++;
             }
 
-
-            // if (current_iter % 100 == 0) {
-            //     solver.calculate_r(); 
-            // }
             solver.calculate_Ar();
 
 #pragma omp single
             {
                 if (current_iter % 5000 == 0) {
                     std::cout << "Num. Iteration: " << current_iter
-                        << " |max|v(s+1)-v(s)| : " << std::scientific << current_delta_v << std::endl;
+                              << " | ||v(s+1)-v(s)||_2 : " << std::scientific << current_delta_v << std::endl;
                 }
             }
         }
     }
 
     solver.last_iterations = current_iter;
-	solver.r_n = current_residual; // Сохраняем невязку
-	solver.final_eps = current_delta_v; // Сохраняем ПРИРАЩЕНИЕ (точность метода)
+    solver.r_n = current_residual;     // Сохраняем Евклидову невязку
+    solver.final_eps = current_delta_v; // Сохраняем Евклидово приращение
 
-	std::cout << "--------------------------------------------------" << std::endl;
-	std::cout << "FINISH: " << current_iter << " iterations." << std::endl;
-	std::cout << "Final r_n: " << current_residual << std::endl;
-	std::cout << "Final eps: " << current_delta_v << std::endl;
-	std::cout << "--------------------------------------------------" << std::endl;
+    std::cout << "--------------------------------------------------" << std::endl;
+    std::cout << "FINISH: " << current_iter << " iterations." << std::endl;
+    std::cout << "Final ||r_n||_2: " << current_residual << std::endl;
+    std::cout << "Final ||eps||_2: " << current_delta_v << std::endl;
+    std::cout << "--------------------------------------------------" << std::endl;
 }
 
 void DirihleVPuassone::calculate_f_grid_main()
@@ -467,105 +466,97 @@ void DirihleVPuassone::prepare_v_and_i_main()
 }
 
 
- double DirihleVPuassone::compare(const DirihleVPuassone& solver_low, const DirihleVPuassone& solver_high) {
-	double max_diff = 0.0;
+double DirihleVPuassone::compare(const DirihleVPuassone& solver_low, const DirihleVPuassone& solver_high) {
+    double sum_squares = 0.0;
 
-	int n_l = solver_low.n;
-	int m_l = solver_low.m;
-	int n_h = solver_high.n;
-	int m_h = solver_high.m;
+    int n_l = solver_low.n;
+    int m_l = solver_low.m;
+    int n_h = solver_high.n;
+    int m_h = solver_high.m;
 
-	if (n_h != 2 * n_l || m_h != 2 * m_l) {
-		std::cerr << "Ошибка: сетки не кратны 2! Сравнение невозможно." << std::endl;
-		return -1.0;
-	}
+    if (n_h != 2 * n_l || m_h != 2 * m_l) {
+        std::cerr << "Ошибка: сетки не кратны 2! Сравнение невозможно." << std::endl;
+        return -1.0;
+    }
 
-	const std::vector<double>& v_low = solver_low.v;
-	const std::vector<double>& v_high = solver_high.v;
+    const std::vector<double>& v_low = solver_low.v;
+    const std::vector<double>& v_high = solver_high.v;
 
-	for (int j = 0; j <= m_l; j++) {
-		for (int i = 0; i <= n_l; i++) {
+    for (int j = 0; j <= m_l; j++) {
+        for (int i = 0; i <= n_l; i++) {
+            int idx_low = j * (n_l + 1) + i;
+            int idx_high = (2 * j) * (n_h + 1) + (2 * i);
 
-			int idx_low = j * (n_l + 1) + i;
+            double diff = v_low[idx_low] - v_high[idx_high];
+            sum_squares += diff * diff;
+        }
+    }
 
-			int idx_high = (2 * j) * (n_h + 1) + (2 * i);
-
-			double diff = std::abs(v_low[idx_low] - v_high[idx_high]);
-
-			if (diff > max_diff) {
-				max_diff = diff;
-			}
-		}
-	}
-
-	return max_diff;
+    return std::sqrt(sum_squares);
 }
 
 
- double DirihleVPuassone::get_test_error(double& max_x, double& max_y) {
-	 double max_diff = 0.0;
-	 max_x = a;
-	 max_y = c;
+double DirihleVPuassone::get_test_error(double& max_x, double& max_y) {
+    double sum_squares = 0.0;
+    double max_diff = -1.0;
+    max_x = a;
+    max_y = c;
 
-	 for (int j = 0; j <= m; j++) {
-		 double y = c + j * k;
-		 for (int i = 0; i <= n; i++) {
-			 double x = a + i * h;
-			 int idx = j * (n + 1) + i;
+    for (int j = 0; j <= m; j++) {
+        double y = c + j * k;
+        for (int i = 0; i <= n; i++) {
+            double x = a + i * h;
+            int idx = j * (n + 1) + i;
 
-			 // Используем аналитическое решение u*(x,y)
-			 double u_exact = delta_u(x, y);
-			 double current_diff = std::abs(u_exact - v[idx]);
+            double u_exact = delta_u(x, y);
+            double diff = u_exact - v[idx];
+            
+            sum_squares += diff * diff;
 
-			 if (current_diff > max_diff) {
-				 max_diff = current_diff;
-				 max_x = x;
-				 max_y = y;
-			 }
-		 }
-	 }
-	 return max_diff;
- }
+            double current_diff = std::abs(diff);
+            if (current_diff > max_diff) {
+                max_diff = current_diff;
+                max_x = x;
+                max_y = y;
+            }
+        }
+    }
+    // Возвращаем Евклидову норму, но переменные max_x и max_y теперь заполнены корректно
+    return std::sqrt(sum_squares);
+}
+
+double DirihleVPuassone::compare_with_half_step(const DirihleVPuassone& solver_high, double& max_x, double& max_y) {
+    double sum_squares = 0.0;
+    double max_diff = -1.0;
+    max_x = a;
+    max_y = c;
+
+    for (int j = 0; j <= m; j++) {
+        double y = c + j * k;
+        for (int i = 0; i <= n; i++) {
+            double x = a + i * h;
+
+            int idx_low = j * (n + 1) + i;
+            int idx_high = (2 * j) * (solver_high.n + 1) + (2 * i);
+
+            double diff = v[idx_low] - solver_high.v[idx_high];
+            
+            // Копим Евклида
+            sum_squares += diff * diff;
+
+            // Ищем координаты максимального расхождения сеток
+            double current_diff = std::abs(diff);
+            if (current_diff > max_diff) {
+                max_diff = current_diff;
+                max_x = x;
+                max_y = y;
+            }
+        }
+    }
+    return std::sqrt(sum_squares);
+}
 
 
- double DirihleVPuassone::compare_with_half_step(const DirihleVPuassone& solver_high, double& max_x, double& max_y) {
-	 double max_diff = 0.0;
-	 max_x = a;
-	 max_y = c;
-
-	 // solver_high должна иметь n_h = 2*n, m_h = 2*m
-	 for (int j = 0; j <= m; j++) {
-		 double y = c + j * k;
-		 for (int i = 0; i <= n; i++) {
-			 double x = a + i * h;
-
-			 int idx_low = j * (n + 1) + i;
-			 int idx_high = (2 * j) * (solver_high.n + 1) + (2 * i);
-
-			 double diff = std::abs(v[idx_low] - solver_high.v[idx_high]);
-
-			 if (diff > max_diff) {
-				 max_diff = diff;
-				 max_x = x;
-				 max_y = y;
-			 }
-		 }
-	 }
-	 return max_diff;
- }
-
- double DirihleVPuassone::get_chebyshov_norma_for_vector(const std::vector<double> &v1) {
-
-	 double max_ret = 0.0;
-#pragma omp parallel for reduction(max:max_ret)
-	 for (int i = 0; i < v1.size(); i++) {
-		 double val = std::abs(v1[i]);
-		 if (val > max_ret) {
-			 max_ret = val;
-		 }
-	 }
-	 return max_ret;
- }
 
  double DirihleVPuassone::get_evklid_norma_for_vector(const std::vector<double>& v1) {
 

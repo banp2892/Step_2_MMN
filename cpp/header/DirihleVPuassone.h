@@ -60,7 +60,6 @@ public:
 
 	double compare_with_half_step(const DirihleVPuassone& solver_high, double& max_x, double& max_y);
 
-	double get_chebyshov_norma_for_vector(const std::vector<double>& v1); // считаем норму невязки по чебышеву на текщем шаге
 
 	double get_evklid_norma_for_vector(const std::vector<double>& v1);
 

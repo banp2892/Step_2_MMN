@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
         solver1.prepare_v_and_i_test();
         solver1.choosing_approximation(approx_type);
         solver1.calculate_r();
-        r_0_initial = solver1.get_chebyshov_norma_for_vector(solver1.r);
+        r_0_initial = solver1.get_evklid_norma_for_vector(solver1.r);
 
         save_to_binary("data/v0_test_numeric.bin", solver1.v);
 
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
         solver1.prepare_v_and_i_main();
         solver1.choosing_approximation(approx_type);
         solver1.calculate_r();
-        r_0_initial = solver1.get_chebyshov_norma_for_vector(solver1.r);
+        r_0_initial = solver1.get_evklid_norma_for_vector(solver1.r);
 
         save_to_binary("data/v1_0_main_numeric.bin", solver1.v);
 
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
         solver2.prepare_v_and_i_main();
         solver2.choosing_approximation(approx_type);
         solver2.calculate_r();
-        r_0_2 = solver2.get_chebyshov_norma_for_vector(solver2.r);
+        r_0_2 = solver2.get_evklid_norma_for_vector(solver2.r);
 
         std::vector<double> temp_vector_v2 = solver2.reshape_to_half_nodes(solver2.v, n, m);
 
